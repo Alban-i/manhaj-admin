@@ -1,5 +1,5 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
-import { useRef, useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,7 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Play, Pause, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
+import { AudioPlayer } from '@/components/editor/audio-player';
 
 const AudioNodeView = ({
   node,
@@ -19,193 +20,9 @@ const AudioNodeView = ({
   selected,
   getPos,
 }: NodeViewProps) => {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [playing, setPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [metadata, setMetadata] = useState<{
-    title?: string;
-    artist?: string;
-    album?: string;
-  }>({});
   const [isDragging, setIsDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [isTitleDialogOpen, setIsTitleDialogOpen] = useState(false);
   const [titleInput, setTitleInput] = useState('');
-  const durationSetRef = useRef(false);
-  const initializedRef = useRef(false);
-
-  useEffect(() => {
-    if (!audioRef.current) return;
-
-    // Only validate on first mount
-    if (!initializedRef.current) {
-      if (!node.attrs.src) {
-        setError('No audio source provided');
-        setLoading(false);
-        return;
-      }
-      initializedRef.current = true;
-    }
-
-    const audio = audioRef.current;
-
-    const handleLoadedMetadata = () => {
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        if (!durationSetRef.current) {
-          setDuration(audio.duration);
-          durationSetRef.current = true;
-        }
-        // Always set loading to false when we have valid metadata
-        setLoading(false);
-      }
-
-      // Try to get ID3 metadata if available
-      if ('mediaSession' in navigator) {
-        const mediaMetadata = navigator.mediaSession.metadata;
-        if (mediaMetadata) {
-          setMetadata({
-            title: mediaMetadata.title || node.attrs.title,
-            artist: mediaMetadata.artist,
-            album: mediaMetadata.album,
-          });
-        }
-      }
-    };
-
-    const handleDurationChange = () => {
-      // Only update duration if we haven't set it yet and it's valid
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        if (!durationSetRef.current) {
-          setDuration(audio.duration);
-          durationSetRef.current = true;
-        }
-        // Always set loading to false when we have valid duration
-        setLoading(false);
-      }
-    };
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
-
-    const handlePlay = () => {
-      setPlaying(true);
-    };
-
-    const handlePause = () => {
-      setPlaying(false);
-    };
-
-    const handleEnded = () => {
-      setPlaying(false);
-    };
-
-    const handleError = () => {
-      let errorMessage = 'Failed to load audio';
-      if (audio.error) {
-        switch (audio.error.code) {
-          case 1:
-            errorMessage = 'Audio loading aborted';
-            break;
-          case 2:
-            errorMessage = 'Network error while loading audio';
-            break;
-          case 3:
-            errorMessage = 'Audio decoding failed';
-            break;
-          case 4:
-            errorMessage = 'Audio format not supported';
-            break;
-        }
-      }
-      setError(errorMessage);
-      setLoading(false);
-    };
-
-    const handleLoadStart = () => {
-      setLoading(true);
-    };
-
-    const handleCanPlay = () => {
-      setLoading(false);
-    };
-
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('durationchange', handleDurationChange);
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('play', handlePlay);
-    audio.addEventListener('pause', handlePause);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
-    audio.addEventListener('loadstart', handleLoadStart);
-    audio.addEventListener('canplay', handleCanPlay);
-
-    return () => {
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('durationchange', handleDurationChange);
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('play', handlePlay);
-      audio.removeEventListener('pause', handlePause);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
-      audio.removeEventListener('loadstart', handleLoadStart);
-      audio.removeEventListener('canplay', handleCanPlay);
-    };
-    // Empty deps: Event listeners only need to be set up once on mount.
-    // The audio element's src is managed via the audio tag's src attribute (line ~280),
-    // and event handlers use refs/setState which don't require re-setup on prop changes.
-  }, []);
-
-  const togglePlay = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!audioRef.current) return;
-
-    const audio = audioRef.current;
-
-    try {
-      if (playing) {
-        audio.pause();
-      } else {
-        await audio.play();
-      }
-    } catch (error) {
-      setError('Failed to play audio: ' + (error as Error).message);
-      setPlaying(false);
-    }
-  };
-
-  const skip = (e: React.MouseEvent, delta: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!audioRef.current) return;
-    if (!isFinite(duration) || duration <= 0) return;
-
-    const audio = audioRef.current;
-    const newTime = Math.max(0, Math.min(duration, audio.currentTime + delta));
-    audio.currentTime = newTime;
-  };
-
-  const formatTime = (time: number) => {
-    if (!isFinite(time) || time < 0) {
-      return '0:00';
-    }
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current) return;
-    if (!isFinite(duration) || duration <= 0) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
-    const newTime = pos * duration;
-    audioRef.current.currentTime = newTime;
-  };
 
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
@@ -239,18 +56,9 @@ const AudioNodeView = ({
         }}
         className="relative"
       >
-        <audio
-          ref={audioRef}
-          src={node.attrs.src}
-          title={node.attrs.title || ''}
-          draggable={false}
-          className="w-full"
-          preload="metadata"
-          crossOrigin="anonymous"
-        />
         {selected && (
           <div
-            className="absolute top-2 right-2 flex gap-2 bg-black/50 p-2 rounded"
+            className="absolute top-2 right-2 z-10 flex gap-2 bg-black/50 p-2 rounded"
             contentEditable={false}
             draggable={false}
             onClick={(e) => e.stopPropagation()}
@@ -280,88 +88,12 @@ const AudioNodeView = ({
             </button>
           </div>
         )}
-        <div className="p-4 bg-gray-50 rounded-md border border-primary" contentEditable={false}>
-          <div className="space-y-2">
-            {/* Error message */}
-            {error && (
-              <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
-                {error}
-              </div>
-            )}
 
-            {/* Title and metadata */}
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">
-                  {metadata.title || node.attrs.title}
-                </div>
-                {(metadata.artist || metadata.album) && (
-                  <div className="text-sm text-gray-500">
-                    {metadata.artist && <span>{metadata.artist}</span>}
-                    {metadata.artist && metadata.album && <span> • </span>}
-                    {metadata.album && <span>{metadata.album}</span>}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Progress bar */}
-            <div
-              className="h-1.5 bg-gray-200 rounded-full cursor-pointer"
-              onClick={handleProgressClick}
-            >
-              <div
-                className="h-full bg-blue-500 rounded-full transition-all"
-                style={{
-                  width: `${
-                    duration > 0 && isFinite(duration)
-                      ? (currentTime / duration) * 100
-                      : 0
-                  }%`
-                }}
-              />
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={(e) => skip(e, -10)}
-                title="« 10s"
-                type="button"
-                disabled={!!error}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                onClick={togglePlay}
-                title={playing ? 'Pause' : 'Play'}
-                type="button"
-                disabled={!!error}
-              >
-                {playing ? (
-                  <Pause className="h-4 w-4" />
-                ) : (
-                  <Play className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                size="sm"
-                onClick={(e) => skip(e, 10)}
-                title="10s »"
-                type="button"
-                disabled={!!error}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-
-              {/* Time display */}
-              <div className="ml-2 text-sm text-gray-600 font-mono">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </div>
-            </div>
-          </div>
+        <div
+          className={`border rounded-md ${selected ? 'border-primary' : 'border-transparent'}`}
+          contentEditable={false}
+        >
+          <AudioPlayer src={node.attrs.src} title={node.attrs.title} />
         </div>
       </div>
 

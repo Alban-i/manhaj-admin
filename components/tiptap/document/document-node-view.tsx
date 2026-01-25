@@ -1,7 +1,7 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Download, FileText, Trash2, ExternalLink } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
+import { DocumentViewer } from '@/components/editor/document-viewer';
 
 const DocumentNodeView = ({
   node,
@@ -11,45 +11,6 @@ const DocumentNodeView = ({
   getPos,
 }: NodeViewProps) => {
   const [isDragging, setIsDragging] = useState(false);
-
-  const getFileIcon = (fileType: string) => {
-    if (fileType?.toLowerCase().includes('pdf')) {
-      return <FileText className="h-6 w-6 text-red-500" />;
-    }
-    if (fileType?.toLowerCase().includes('doc')) {
-      return <FileText className="h-6 w-6 text-blue-500" />;
-    }
-    if (fileType?.toLowerCase().includes('xls')) {
-      return <FileText className="h-6 w-6 text-green-500" />;
-    }
-    if (fileType?.toLowerCase().includes('ppt')) {
-      return <FileText className="h-6 w-6 text-orange-500" />;
-    }
-    return <FileText className="h-6 w-6 text-gray-500" />;
-  };
-
-  const formatFileSize = (size: number) => {
-    if (!size) return '';
-    
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let unitIndex = 0;
-    let fileSize = size;
-
-    while (fileSize >= 1024 && unitIndex < units.length - 1) {
-      fileSize /= 1024;
-      unitIndex++;
-    }
-
-    return `${fileSize.toFixed(1)} ${units[unitIndex]}`;
-  };
-
-  const handleDownload = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (node.attrs.src) {
-      window.open(node.attrs.src, '_blank');
-    }
-  };
 
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
@@ -83,61 +44,10 @@ const DocumentNodeView = ({
         }}
         className="relative"
       >
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors" contentEditable={false}>
-          <div className="flex items-center gap-3">
-            {/* File icon */}
-            <div className="flex-shrink-0">
-              {getFileIcon(node.attrs.fileType)}
-            </div>
-
-            {/* File info */}
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-gray-900 truncate">
-                {node.attrs.title || 'Untitled Document'}
-              </div>
-              <div className="text-sm text-gray-500 flex items-center gap-2">
-                {node.attrs.fileType && (
-                  <span className="uppercase">{node.attrs.fileType}</span>
-                )}
-                {node.attrs.fileSize && (
-                  <>
-                    <span>•</span>
-                    <span>{formatFileSize(node.attrs.fileSize)}</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={handleDownload}
-                title="Download/Open"
-                type="button"
-                variant="ghost"
-                className="hover:bg-gray-200"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleDownload}
-                title="Download"
-                type="button"
-                variant="ghost"
-                className="hover:bg-gray-200"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
         {/* Edit controls when selected */}
         {selected && (
           <div
-            className="absolute top-2 right-2 flex gap-2 bg-black/50 p-2 rounded"
+            className="absolute top-2 right-2 z-10 flex gap-2 bg-black/50 p-2 rounded"
             contentEditable={false}
             draggable={false}
             onClick={(e) => e.stopPropagation()}
@@ -189,6 +99,18 @@ const DocumentNodeView = ({
             </button>
           </div>
         )}
+
+        <div
+          className={`border rounded-md ${selected ? 'border-primary' : 'border-transparent'}`}
+          contentEditable={false}
+        >
+          <DocumentViewer
+            src={node.attrs.src}
+            title={node.attrs.title || 'Untitled Document'}
+            fileType={node.attrs.fileType || 'unknown'}
+            fileSize={node.attrs.fileSize}
+          />
+        </div>
       </div>
     </NodeViewWrapper>
   );

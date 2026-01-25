@@ -1,5 +1,5 @@
 // Custom Image Extension
-import { Image } from '@tiptap/extension-image';
+import Image, { type ImageOptions } from '@tiptap/extension-image';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import { mergeAttributes, CommandProps } from '@tiptap/core';
 import ImageNodeView from './image-node-view';
@@ -22,8 +22,11 @@ const CustomImageExtension = Image.extend({
 
   addOptions() {
     return {
+      ...this.parent?.(),
       inline: true,
       allowBase64: true,
+      HTMLAttributes: {},
+      resize: false,
     };
   },
 
@@ -101,8 +104,9 @@ const CustomImageExtension = Image.extend({
 
   addCommands() {
     return {
-      setImage:
-        (options: ImageAttributes) =>
+      ...this.parent?.(),
+      setCustomImage:
+        (options: ImageAttributes & { src: string }) =>
         ({ chain, state }: CommandProps) => {
           const { selection } = state;
           const position = selection.$anchor.pos;
@@ -127,8 +131,8 @@ const CustomImageExtension = Image.extend({
     return ReactNodeViewRenderer(ImageNodeView);
   },
 
-  renderHTML({ node, HTMLAttributes }: { node: ImageNode; HTMLAttributes: Record<string, unknown> }) {
-    const { src, alt, title, width, height, alignment } = node.attrs;
+  renderHTML({ node, HTMLAttributes }: { node: { attrs: Record<string, unknown> }; HTMLAttributes: Record<string, unknown> }) {
+    const { src, alt, title, width, height, alignment } = node.attrs as unknown as ImageAttributes & { src: string };
     const margin =
       alignment === 'left'
         ? '0 auto 0 0'
