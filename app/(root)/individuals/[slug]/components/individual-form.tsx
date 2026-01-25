@@ -87,6 +87,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
   const [description, setDescription] = useState<string>(
     individual?.description ?? ''
   );
+  const [descriptionJson, setDescriptionJson] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const defaultValues = {
@@ -192,6 +193,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
         name: values.name,
         slug: values.slug,
         description: description || null,
+        description_json: descriptionJson,
         status: values.status,
         language: values.language,
         is_original: values.is_original,
@@ -572,7 +574,13 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                 <CardTitle>Description</CardTitle>
               </CardHeader>
               <CardContent>
-                <Editor content={description} onChange={setDescription} />
+                <Editor
+                  content={description}
+                  onChange={(html, json) => {
+                    setDescription(html);
+                    if (json) setDescriptionJson(json);
+                  }}
+                />
               </CardContent>
             </Card>
           </fieldset>

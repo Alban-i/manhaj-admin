@@ -89,6 +89,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<string>(post?.content || '');
+  const [contentJson, setContentJson] = useState<Record<string, unknown> | null>(null);
   type FormStatus = 'draft' | 'published' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
     (post?.status?.toLowerCase() as FormStatus) ?? 'draft'
@@ -149,6 +150,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
       const postData = {
         ...values,
         content,
+        content_json: contentJson,
         status,
         category_id: values.category_id ? Number(values.category_id) : null,
         updated_at: new Date().toISOString(),
@@ -622,9 +624,10 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
                       <FormControl>
                         <Editor
                           content={content}
-                          onChange={(value) => {
-                            setContent(value);
-                            field.onChange(value);
+                          onChange={(html, json) => {
+                            setContent(html);
+                            if (json) setContentJson(json);
+                            field.onChange(html);
                           }}
                         />
                       </FormControl>

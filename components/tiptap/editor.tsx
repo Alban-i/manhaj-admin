@@ -78,7 +78,7 @@ import { GlossarySelectorDialog } from './glossary/glossary-selector-dialog';
 
 interface EditorProps {
   content?: string;
-  onChange?: (content: string) => void;
+  onChange?: (content: string, json?: Record<string, unknown>) => void;
   articleId?: string;
   onMediaAdded?: () => void;
 }
@@ -161,7 +161,8 @@ export default function Editor({
       // This prevents unnecessary re-renders from NodeView internal state updates
       if (lastContentRef.current !== newContent) {
         lastContentRef.current = newContent;
-        onChange?.(newContent);
+        const json = editor.getJSON();
+        onChange?.(newContent, json);
       }
     },
     editorProps: {

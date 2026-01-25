@@ -114,6 +114,7 @@ export type Database = {
           author_id: string | null
           category_id: number | null
           content: string
+          content_json: Json | null
           created_at: string | null
           id: string
           image_url: string | null
@@ -133,6 +134,7 @@ export type Database = {
           author_id?: string | null
           category_id?: number | null
           content: string
+          content_json?: Json | null
           created_at?: string | null
           id?: string
           image_url?: string | null
@@ -152,6 +154,7 @@ export type Database = {
           author_id?: string | null
           category_id?: number | null
           content?: string
+          content_json?: Json | null
           created_at?: string | null
           id?: string
           image_url?: string | null
@@ -315,6 +318,7 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          description_json: Json | null
           id: number
           is_original: boolean
           language: string
@@ -330,6 +334,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
+          description_json?: Json | null
           id?: number
           is_original?: boolean
           language?: string
@@ -345,6 +350,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string | null
+          description_json?: Json | null
           id?: number
           is_original?: boolean
           language?: string
@@ -538,6 +544,7 @@ export type Database = {
           author_id: string | null
           category_id: number | null
           content: string
+          content_json: Json | null
           created_at: string | null
           id: number
           image_url: string | null
@@ -555,6 +562,7 @@ export type Database = {
           author_id?: string | null
           category_id?: number | null
           content: string
+          content_json?: Json | null
           created_at?: string | null
           id?: number
           image_url?: string | null
@@ -572,6 +580,7 @@ export type Database = {
           author_id?: string | null
           category_id?: number | null
           content?: string
+          content_json?: Json | null
           created_at?: string | null
           id?: number
           image_url?: string | null

@@ -101,6 +101,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 }) => {
   const defaultValues = article ?? { ...initialData, is_featured: false };
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
+  const [contentJson, setContentJson] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [selectedTags, setSelectedTags] = useState<number[]>(selectedTagIds);
@@ -212,6 +213,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         title: values.title,
         summary: values.summary,
         content: content,
+        content_json: contentJson, // Store TipTap JSON for React-native rendering
         slug: values.slug,
         status,
         is_featured: values.is_featured,
@@ -803,9 +805,12 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <CardTitle>Content</CardTitle>
               </CardHeader>
               <CardContent>
-                <Editor 
-                  content={content} 
-                  onChange={setContent}
+                <Editor
+                  content={content}
+                  onChange={(html, json) => {
+                    setContent(html);
+                    if (json) setContentJson(json);
+                  }}
                   articleId={defaultValues.id}
                 />
               </CardContent>
