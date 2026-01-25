@@ -37,6 +37,7 @@ import { TabToggle } from '@/components/ui/tab-toggle';
 import { IndividualWithType } from '@/actions/get-individual';
 import { IndividualTranslation } from '@/actions/get-individual-translations';
 import { Language } from '@/types/types';
+import { Json } from '@/types/types_db';
 import { Globe, Plus, Star, Link2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -87,7 +88,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
   const [description, setDescription] = useState<string>(
     individual?.description ?? ''
   );
-  const [descriptionJson, setDescriptionJson] = useState<Record<string, unknown> | null>(null);
+  const [descriptionJson, setDescriptionJson] = useState<Json | null>(null);
   const [loading, setLoading] = useState(false);
 
   const defaultValues = {
@@ -578,7 +579,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                   content={description}
                   onChange={(html, json) => {
                     setDescription(html);
-                    if (json) setDescriptionJson(json);
+                    if (json) setDescriptionJson(json as Json);
                   }}
                 />
               </CardContent>

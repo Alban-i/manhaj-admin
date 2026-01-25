@@ -48,6 +48,7 @@ const IndividualPage = async ({
       name: '',
       slug: translationParams.slug ?? '',
       description: null,
+      description_json: null,
       status: 'draft' as const,
       type_id: translationGroup?.type_id ?? null,
       original_name: translationGroup?.original_name ?? '',

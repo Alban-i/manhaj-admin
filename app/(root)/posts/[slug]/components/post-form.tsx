@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Posts, ProfilesWithRoles, Language } from '@/types/types';
 import { PostTranslation } from '@/actions/get-post-translations';
+import { Json } from '@/types/types_db';
 
 import {
   Form,
@@ -47,6 +48,7 @@ const initialData: Omit<Posts, 'id'> & { id: null } = {
   id: null,
   title: '',
   content: '',
+  content_json: null,
   status: 'draft',
   slug: '',
   type: 'global',
@@ -89,7 +91,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<string>(post?.content || '');
-  const [contentJson, setContentJson] = useState<Record<string, unknown> | null>(null);
+  const [contentJson, setContentJson] = useState<Json | null>(null);
   type FormStatus = 'draft' | 'published' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
     (post?.status?.toLowerCase() as FormStatus) ?? 'draft'
@@ -626,7 +628,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
                           content={content}
                           onChange={(html, json) => {
                             setContent(html);
-                            if (json) setContentJson(json);
+                            if (json) setContentJson(json as Json);
                             field.onChange(html);
                           }}
                         />

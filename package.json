@@ -55,7 +55,6 @@
     "@tiptap/extension-table-row": "3.6.6",
     "@tiptap/extension-typography": "3.6.6",
     "@tiptap/extensions": "3.6.6",
-    "@tiptap/html": "^3.17.1",
     "@tiptap/pm": "3.6.6",
     "@tiptap/react": "3.6.6",
     "@tiptap/starter-kit": "3.6.6",

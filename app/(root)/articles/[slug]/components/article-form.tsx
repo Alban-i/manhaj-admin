@@ -11,6 +11,7 @@ import {
   ArticleStatus,
   Language,
 } from '@/types/types';
+import { Json } from '@/types/types_db';
 import { ArticleTranslation } from '@/actions/get-article-translations';
 
 import {
@@ -101,7 +102,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 }) => {
   const defaultValues = article ?? { ...initialData, is_featured: false };
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
-  const [contentJson, setContentJson] = useState<Record<string, unknown> | null>(null);
+  const [contentJson, setContentJson] = useState<Json | null>(null);
   const [loading, setLoading] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [selectedTags, setSelectedTags] = useState<number[]>(selectedTagIds);
@@ -809,7 +810,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   content={content}
                   onChange={(html, json) => {
                     setContent(html);
-                    if (json) setContentJson(json);
+                    if (json) setContentJson(json as Json);
                   }}
                   articleId={defaultValues.id}
                 />
