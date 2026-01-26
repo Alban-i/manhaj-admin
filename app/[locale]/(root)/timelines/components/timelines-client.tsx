@@ -13,11 +13,11 @@ interface TimelinesClientProps {
 }
 
 const TimelinesClient: React.FC<TimelinesClientProps> = ({ timelines, languages }) => {
-  const refinedTimelines = timelines.map(({ id, title, slug, is_published, language }) => ({
+  const refinedTimelines = timelines.map(({ id, title, slug, status, language }) => ({
     id,
     title: title ?? '',
     slug,
-    is_published: is_published ?? false,
+    status: status ?? 'draft',
     language: language ?? 'ar',
   }));
 

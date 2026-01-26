@@ -8,6 +8,7 @@ export type LanguageCode = 'ar' | 'en' | 'fr' | 'de' | 'es';
 export type TextDirection = 'ltr' | 'rtl';
 
 export type ArticleStatus = 'Draft' | 'Published' | 'Archived';
+export type TimelineStatus = 'draft' | 'published' | 'archived';
 export type Articles = Omit<
   Database['public']['Tables']['articles']['Row'],
   'status' | 'category_id'

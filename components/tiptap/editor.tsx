@@ -13,7 +13,7 @@ import { AutoTextDirectionExtension } from './text-direction/auto-text-direction
 import { FootnotesV2Extension } from './footnotes-v2/footnotes-v2-extension-new';
 import { FootnoteV2Extension } from './footnotes-v2/footnote-v2-extension-new';
 import { FootnoteReferenceV2Extension } from './footnotes-v2/footnote-reference-v2-extension-new';
-import QuoteWithSourceExtension from './quote/quote-with-source-extension';
+import QuoteExtension from './quote/quote-extension';
 
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
@@ -63,7 +63,6 @@ import { CustomDocumentExtension } from './document/document-extension';
 // import { PostSelector } from './post/static-post-selector-dialog';
 import { DynamicPostReference } from './post/dynamic-post-reference';
 import { DynamicPostSelectorDialog } from './post/dynamic-post-selector-dialog';
-import QuoteWithTranslationExtension from './quote/quote-with-translation-extension';
 import {
   LayoutColumnExtension,
   LayoutExtension,
@@ -96,14 +95,6 @@ export default function Editor({
   articleId,
   onMediaAdded,
 }: EditorProps) {
-  // === DEBUG: Track editor instance identity and render cycles ===
-  const editorIdRef = useRef(Math.random().toString(36).slice(2, 8));
-  const renderCountRef = useRef(0);
-  renderCountRef.current += 1;
-
-  console.log(`🔷 RENDER #${renderCountRef.current} | Editor ID: ${editorIdRef.current} | content prop: "${content?.slice(0, 80) || '(empty)'}..."`);
-  // === END DEBUG ===
-
   const [isMounted, setIsMounted] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
@@ -159,24 +150,21 @@ export default function Editor({
       FootnoteReferenceV2Extension,
       // PostReference,
       DynamicPostReference,
-      QuoteWithSourceExtension,
-      QuoteWithTranslationExtension,
+      QuoteExtension,
       GlossaryTermExtension,
     ],
     content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
-    onCreate: ({ editor }) => {
-      console.log(`🟢 onCreate | Editor ID: ${editorIdRef.current} | HTML: ${editor.getHTML()}`);
-      // Mark as initialized after a microtask to allow the editor to fully stabilize
+    onCreate: () => {
+      // Mark as initialized after a short timeout to allow the editor to fully stabilize
       // This prevents spurious onUpdate calls during React StrictMode double-mount
-      queueMicrotask(() => {
+      // Using setTimeout instead of queueMicrotask because focus events fire after microtasks
+      setTimeout(() => {
         isInitializedRef.current = true;
-        console.log(`🟢 Editor initialized | Editor ID: ${editorIdRef.current}`);
-      });
+      }, 100);
     },
     onUpdate: ({ editor }) => {
       const newContent = editor.getHTML();
-      console.log(`🟡 onUpdate | Editor ID: ${editorIdRef.current} | initialized: ${isInitializedRef.current} | HTML: ${newContent}`);
 
       // Ignore spurious updates during initialization (React StrictMode double-mount issue)
       // If unexpected content appears before initialization, reset to the original content
@@ -184,32 +172,20 @@ export default function Editor({
         // lastContentRef holds the expected initial content
         const expectedContent = lastContentRef.current || '<p></p>';
         if (newContent !== expectedContent && newContent !== '<p></p>') {
-          console.log(`🟡 onUpdate | SPURIOUS UPDATE DETECTED - resetting to: "${expectedContent.slice(0, 50)}..."`);
           // Reset to expected content on next tick to avoid infinite loop
           queueMicrotask(() => {
             editor.commands.setContent(expectedContent);
           });
         }
-        console.log(`🟡 onUpdate | IGNORED - editor not yet initialized`);
         return;
       }
 
       // Only notify parent if content structure actually changed
       // This prevents unnecessary re-renders from NodeView internal state updates
       if (lastContentRef.current !== newContent) {
-        console.log(`🟡 onUpdate | Content CHANGED from: "${lastContentRef.current?.slice(0, 80)}..." to: "${newContent.slice(0, 80)}..."`);
         lastContentRef.current = newContent;
         const json = editor.getJSON();
         onChange?.(newContent, json);
-      } else {
-        console.log(`🟡 onUpdate | Content UNCHANGED (no onChange triggered)`);
-      }
-    },
-    onTransaction: ({ transaction }) => {
-      // Log ALL transactions, not just docChanged ones
-      console.log(`🔵 onTransaction | Editor ID: ${editorIdRef.current} | docChanged: ${transaction.docChanged} | steps: ${transaction.steps.length} | selectionSet: ${transaction.selectionSet} | storedMarksSet: ${transaction.storedMarksSet}`);
-      if (transaction.docChanged) {
-        console.log('🔵 onTransaction | Steps:', transaction.steps.map(s => s.toJSON()));
       }
     },
     editorProps: {
@@ -289,27 +265,6 @@ export default function Editor({
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  // === DEBUG: Track mount/unmount cycles ===
-  useEffect(() => {
-    console.log(`🟩 MOUNT | Editor ID: ${editorIdRef.current} | content prop at mount: "${content?.slice(0, 80) || '(empty)'}..."`);
-    return () => {
-      console.log(`🟥 UNMOUNT | Editor ID: ${editorIdRef.current}`);
-    };
-  }, []);
-
-  // === DEBUG: Track content prop changes ===
-  const prevContentRef = useRef(content);
-  useEffect(() => {
-    if (prevContentRef.current !== content) {
-      console.log(`🟠 CONTENT PROP CHANGED | Editor ID: ${editorIdRef.current}`);
-      console.log(`   From: "${prevContentRef.current?.slice(0, 80) || '(empty)'}..."`);
-      console.log(`   To:   "${content?.slice(0, 80) || '(empty)'}..."`);
-      prevContentRef.current = content;
-    }
-  }, [content]);
-  // === END DEBUG ===
-
 
   const onImageUpload = useCallback(
     (result: UploadResult) => {
@@ -564,78 +519,33 @@ export default function Editor({
           >
             <LinkIcon className="h-4 w-4" />
           </Toggle>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="bg-transparent border-input h-8 w-8"
-                title="Quote"
-              >
-                <Quote className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuLabel>Quote Options</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  console.trace('🟠 DEBUG: Regular Quote menu item clicked!');
-                  editor.chain().focus().toggleBlockquote().run();
-                }}
-              >
-                <Quote className="h-4 w-4" />
-                <span>Regular Quote</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  console.trace('🟣 DEBUG: Quote + Source menu item clicked!');
-                  if (!editor) return;
-                  editor
-                    .chain()
-                    .focus()
-                    .insertContent({
-                      type: 'quoteWithSource',
-                      attrs: { sourceLabel: '', sourceUrl: '' },
-                      content: [
-                        {
-                          type: 'paragraph',
-                        },
-                      ],
-                    })
-                    .run();
-                  editor.commands.focus();
-                }}
-              >
-                <Quote className="h-4 w-4" />
-                <span>Quote + Source</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  console.trace('🔴 DEBUG: Quote + Translation menu item clicked!');
-                  if (!editor) return;
-                  editor
-                    .chain()
-                    .focus()
-                    .insertContent({
-                      type: 'quoteWithTranslation',
-                      attrs: {
-                        original: '',
-                        translation: '',
-                        sourceLabel: '',
-                        sourceUrl: '',
-                        autoOpen: true,
-                      },
-                    })
-                    .run();
-                  editor.commands.focus();
-                }}
-              >
-                <span className="h-4 w-4 font-bold flex items-center justify-center">Q</span>
-                <span>Quote + Translation</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="bg-transparent border-input h-8 w-8"
+            title="Quote"
+            onClick={() => {
+              if (!editor) return;
+              editor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: 'quote',
+                  attrs: {
+                    original: '',
+                    translation: '',
+                    sourceLabel: '',
+                    sourceUrl: '',
+                    autoOpen: true,
+                  },
+                })
+                .run();
+              editor.commands.focus();
+            }}
+          >
+            <Quote className="h-4 w-4" />
+          </Button>
         </ButtonGroup>
 
         {/* GROUP 7: Layout, Footnote, Table */}

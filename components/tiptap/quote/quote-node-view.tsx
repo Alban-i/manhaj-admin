@@ -12,7 +12,7 @@ import {
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Quote as QuoteIcon } from 'lucide-react';
 
-const QuoteWithTranslationNodeView = ({
+const QuoteNodeView = ({
   node,
   updateAttributes,
 }: NodeViewProps) => {
@@ -81,7 +81,7 @@ const QuoteWithTranslationNodeView = ({
                 className="mb-2"
               />
               <Input
-                placeholder="Original (English)"
+                placeholder="Original"
                 value={original}
                 onChange={(e) => setOriginal(e.target.value)}
               />
@@ -156,4 +156,4 @@ const QuoteWithTranslationNodeView = ({
   );
 };
 
-export default QuoteWithTranslationNodeView;
+export default QuoteNodeView;

@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import {
@@ -45,7 +45,7 @@ import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon } from 'lucide-react';
+import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon, FileEdit, Archive } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import arabic from 'react-date-object/calendars/arabic';
@@ -59,6 +59,7 @@ import { UsedMediaCard } from '@/components/media/used-media-card';
 import { revalidateArticle, revalidateArticles } from '@/actions/revalidate';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { getLanguageWithFlag } from '@/i18n/config';
 
 const initialData = {
   title: '',
@@ -116,6 +117,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 }) => {
   const defaultValues = article ?? { ...initialData, is_featured: false };
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
+  const initialContentRef = useRef<string>(defaultValues.content ?? '');
   const [contentJson, setContentJson] = useState<Json | null>(null);
   const [loading, setLoading] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -318,6 +320,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         event_date_hijri_year: data.event_date_hijri_year ?? undefined,
         event_date_gregorian: data.event_date_gregorian ?? '',
       });
+      initialContentRef.current = content;
 
       toast.success(toastMessage);
 
@@ -411,7 +414,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   return (
     <div className="p-4">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-20">
           <fieldset
             disabled={loading}
             className="grid @3xl:grid-cols-[2fr_1fr] gap-4"
@@ -729,6 +732,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                                 (l) => l.code === translation.language
                               );
                               const isCurrent = translation.id === defaultValues.id;
+                              const displayName = getLanguageWithFlag(
+                                translation.language,
+                                lang?.native_name || translation.language.toUpperCase()
+                              );
                               return isCurrent ? (
                                 <Badge
                                   key={translation.id}
@@ -736,7 +743,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                                   className="text-xs gap-1 cursor-default py-1.5 px-3"
                                 >
                                   {translation.is_original && <Star className="h-3 w-3 fill-current" />}
-                                  {lang?.native_name || translation.language.toUpperCase()}
+                                  {displayName}
                                 </Badge>
                               ) : (
                                 <Link key={translation.id} href={`/articles/${translation.slug}`}>
@@ -745,7 +752,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                                     className="text-xs gap-1 cursor-pointer hover:bg-background py-1.5 px-3"
                                   >
                                     {translation.is_original && <Star className="h-3 w-3 fill-current" />}
-                                    {lang?.native_name || translation.language.toUpperCase()}
+                                    {displayName}
                                   </Badge>
                                 </Link>
                               );
@@ -769,7 +776,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                                 className="gap-1 h-8"
                               >
                                 <Plus className="h-3 w-3" />
-                                {lang.native_name}
+                                {getLanguageWithFlag(lang.code, lang.native_name)}
                               </Button>
                             ))}
                           </div>
@@ -839,7 +846,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 />
 
                 {/* Other Details - Grid */}
-                <div className="grid @lg:grid-cols-2 @2xl:grid-cols-4 gap-4">
+                <div className="grid @lg:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="slug"
@@ -860,9 +867,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       state={status}
                       setState={(value) => setStatus(value as FormStatus)}
                       picklist={[
-                        { value: 'draft', label: 'Draft' },
-                        { value: 'published', label: 'Published' },
-                        { value: 'archived', label: 'Archived' },
+                        { value: 'draft', label: <span className="flex items-center gap-1.5"><FileEdit className="h-3.5 w-3.5" />Draft</span> },
+                        { value: 'published', label: <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />Published</span> },
+                        { value: 'archived', label: <span className="flex items-center gap-1.5"><Archive className="h-3.5 w-3.5" />Archived</span> },
                       ]}
                     />
                   </div>
@@ -941,6 +948,32 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
               </CardContent>
             </Card>
           </fieldset>
+
+          {/* Sticky Bottom Action Bar - appears when form is dirty */}
+          {(form.formState.isDirty || content !== initialContentRef.current) && (
+            <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card">
+              <div className="flex h-14 items-center justify-end gap-4 px-4 md:px-6">
+                <span className="text-sm text-muted-foreground mr-auto">
+                  Unsaved changes
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    form.reset();
+                    setContent(initialContentRef.current);
+                  }}
+                  disabled={loading}
+                >
+                  Discard
+                </Button>
+                <Button type="submit" size="sm" disabled={loading}>
+                  {loading ? 'Saving...' : action}
+                </Button>
+              </div>
+            </div>
+          )}
         </form>
       </Form>
     </div>

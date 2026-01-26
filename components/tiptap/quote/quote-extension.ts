@@ -1,23 +1,23 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
-import QuoteWithTranslationNodeView from './quote-with-translation-node-view';
+import QuoteNodeView from './quote-node-view';
 
-export interface QuoteWithTranslationOptions {
+export interface QuoteOptions {
   HTMLAttributes: Record<string, string>;
 }
 
-export interface QuoteWithTranslationAttrs {
+export interface QuoteAttrs {
   quote?: string;
   translation?: string;
   sourceLabel?: string;
   sourceUrl?: string;
 }
 
-const QuoteWithTranslationExtension = Node.create<
-  QuoteWithTranslationOptions,
-  QuoteWithTranslationAttrs
+const QuoteExtension = Node.create<
+  QuoteOptions,
+  QuoteAttrs
 >({
-  name: 'quoteWithTranslation',
+  name: 'quote',
   group: 'block',
   content: '', // no inner content, just attributes
   defining: true,
@@ -58,9 +58,9 @@ const QuoteWithTranslationExtension = Node.create<
           attrs.sourceUrl ? { 'data-source-url': attrs.sourceUrl } : {},
       },
       quoteType: {
-        default: 'quote-with-translation',
-        parseHTML: () => 'quote-with-translation',
-        renderHTML: () => ({ 'data-quote-type': 'quote-with-translation' }),
+        default: 'quote',
+        parseHTML: () => 'quote',
+        renderHTML: () => ({ 'data-quote-type': 'quote' }),
       },
       styleType: {
         default: 'verse',
@@ -77,21 +77,25 @@ const QuoteWithTranslationExtension = Node.create<
   },
 
   parseHTML() {
-    return [{ tag: 'blockquote[data-quote-type="quote-with-translation"]' }];
+    return [
+      { tag: 'blockquote[data-quote-type="quote"]' },
+      // Backwards compatibility: also parse old quote-with-translation blocks
+      { tag: 'blockquote[data-quote-type="quote-with-translation"]' },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
     return [
       'blockquote',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-quote-type': 'quote-with-translation',
+        'data-quote-type': 'quote',
       }),
     ];
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(QuoteWithTranslationNodeView);
+    return ReactNodeViewRenderer(QuoteNodeView);
   },
 });
 
-export default QuoteWithTranslationExtension;
+export default QuoteExtension;

@@ -5,6 +5,8 @@ import { DataTableColumnHeader } from './data-table-column-header';
 import { Badge } from '@/components/ui/badge';
 import { ArticleStatus } from '@/types/types';
 import { cn } from '@/lib/utils';
+import { getLanguageWithFlag } from '@/i18n/config';
+import { FileEdit, Globe, Archive } from 'lucide-react';
 
 export type PostsInDataTable = {
   id: string;
@@ -49,10 +51,14 @@ export const columns: ExtendedColumnDef<PostsInDataTable>[] = [
     ),
     cell: ({ row }) => {
       const language = row.original.language;
+      const displayName = getLanguageWithFlag(
+        language,
+        languageNames[language] || language.toUpperCase()
+      );
       return (
         <div className="px-2 text-center">
           <Badge variant="outline" className="font-normal">
-            {languageNames[language] || language.toUpperCase()}
+            {displayName}
           </Badge>
         </div>
       );
@@ -72,11 +78,14 @@ export const columns: ExtendedColumnDef<PostsInDataTable>[] = [
       const capitalizedStatus =
         status.charAt(0).toUpperCase() + status.slice(1);
 
+      const StatusIcon = status === 'Draft' ? FileEdit : status === 'Published' ? Globe : Archive;
+
       return (
         <div className="px-2 text-right">
           <Badge
             variant={status === 'Archived' ? 'secondary' : 'outline'}
             className={cn(
+              'gap-1',
               status === 'Published' &&
                 'border-green-400 bg-green-100 text-green-700',
               status === 'Draft' &&
@@ -84,6 +93,7 @@ export const columns: ExtendedColumnDef<PostsInDataTable>[] = [
               status === 'Archived' && 'border-none'
             )}
           >
+            <StatusIcon className="h-3 w-3" />
             {capitalizedStatus}
           </Badge>
         </div>

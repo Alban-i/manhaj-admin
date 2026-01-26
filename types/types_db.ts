@@ -775,6 +775,7 @@ export type Database = {
           custom_title: string | null
           display_order: number | null
           id: string
+          parent_id: string | null
           timeline_id: string
         }
         Insert: {
@@ -785,6 +786,7 @@ export type Database = {
           custom_title?: string | null
           display_order?: number | null
           id?: string
+          parent_id?: string | null
           timeline_id: string
         }
         Update: {
@@ -795,6 +797,7 @@ export type Database = {
           custom_title?: string | null
           display_order?: number | null
           id?: string
+          parent_id?: string | null
           timeline_id?: string
         }
         Relationships: [
@@ -803,6 +806,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_articles_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_articles"
             referencedColumns: ["id"]
           },
           {
@@ -816,42 +826,52 @@ export type Database = {
       }
       timelines: {
         Row: {
+          category_id: number | null
           created_at: string | null
           description: string | null
           id: string
           image_url: string | null
-          is_published: boolean | null
           language: string | null
           slug: string
+          status: string | null
           title: string
           translation_group_id: string | null
           updated_at: string | null
         }
         Insert: {
+          category_id?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
-          is_published?: boolean | null
           language?: string | null
           slug: string
+          status?: string | null
           title: string
           translation_group_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          category_id?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
-          is_published?: boolean | null
           language?: string | null
           slug?: string
+          status?: string | null
           title?: string
           translation_group_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "timelines_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "timelines_language_fkey"
             columns: ["language"]

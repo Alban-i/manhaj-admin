@@ -4,12 +4,14 @@ import { ColumnDef } from '@tanstack/react-table';
 import { DataTableColumnHeader } from '@/app/[locale]/(root)/articles/components/data-table-column-header';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { getLanguageWithFlag } from '@/i18n/config';
+import { FileEdit, Globe, Archive } from 'lucide-react';
 
 export type TimelinesInDataTable = {
   id: string;
   title: string;
   slug: string;
-  is_published: boolean;
+  status: string;
   language: string;
 };
 
@@ -48,10 +50,14 @@ export const columns: ExtendedColumnDef<TimelinesInDataTable>[] = [
     ),
     cell: ({ row }) => {
       const language = row.original.language;
+      const displayName = getLanguageWithFlag(
+        language,
+        languageNames[language] || language.toUpperCase()
+      );
       return (
         <div className="px-2 text-center">
           <Badge variant="outline" className="font-normal">
-            {languageNames[language] || language.toUpperCase()}
+            {displayName}
           </Badge>
         </div>
       );
@@ -61,26 +67,32 @@ export const columns: ExtendedColumnDef<TimelinesInDataTable>[] = [
     },
   },
   {
-    accessorKey: 'is_published',
+    accessorKey: 'status',
     label: 'Status',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
     cell: ({ row }) => {
-      const isPublished = row.original.is_published;
+      const status = row.original.status;
+      const capitalizedStatus = status.charAt(0).toUpperCase() + status.slice(1);
+
+      const StatusIcon = status === 'draft' ? FileEdit : status === 'published' ? Globe : Archive;
 
       return (
         <div className="px-2 text-right">
           <Badge
-            variant={isPublished ? 'default' : 'outline'}
+            variant={status === 'archived' ? 'secondary' : 'outline'}
             className={cn(
-              isPublished &&
+              'gap-1',
+              status === 'published' &&
                 'border-green-400 bg-green-100 text-green-700',
-              !isPublished &&
-                'border-gray-800 bg-background text-foreground'
+              status === 'draft' &&
+                'border-gray-800 bg-background text-foreground',
+              status === 'archived' && 'border-none'
             )}
           >
-            {isPublished ? 'Published' : 'Draft'}
+            <StatusIcon className="h-3 w-3" />
+            {capitalizedStatus}
           </Badge>
         </div>
       );

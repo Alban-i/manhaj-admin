@@ -1,30 +1,9 @@
 import { createClient } from '@/providers/supabase/server';
-import { Json } from '@/types/types_db';
+import { TimelineEvent } from '@/types/timeline';
 
-export interface TimelineEvent {
-  id: string;
-  timeline_id: string;
-  article_id: string;
-  display_order: number | null;
-  custom_event_date_hijri: string | null;
-  custom_event_date_gregorian: string | null;
-  custom_title: string | null;
-  created_at: string | null;
-  article: {
-    id: string;
-    title: string;
-    slug: string;
-    summary: string;
-    content: string;
-    content_json: Json | null;
-    image_url: string | null;
-    event_date_hijri: string | null;
-    event_date_hijri_year: number | null;
-    event_date_gregorian: string | null;
-    event_date_precision: string | null;
-    language: string;
-  };
-}
+// Re-export types and helpers for convenience
+export type { TimelineEvent, TimelineEventNested } from '@/types/timeline';
+export { nestEvents } from '@/types/timeline';
 
 const getTimelineEvents = async (timelineId: string): Promise<TimelineEvent[]> => {
   const supabase = await createClient();

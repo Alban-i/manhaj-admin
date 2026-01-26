@@ -10,6 +10,7 @@ export interface ArticleForTimeline {
   event_date_precision: string | null;
   language: string;
   status: string;
+  category_id: number | null;
 }
 
 const getArticlesForTimeline = async (): Promise<ArticleForTimeline[]> => {
@@ -25,7 +26,8 @@ const getArticlesForTimeline = async (): Promise<ArticleForTimeline[]> => {
       event_date_gregorian,
       event_date_precision,
       language,
-      status
+      status,
+      category_id
     `)
     .order('title', { ascending: true });
 

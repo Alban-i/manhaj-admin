@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -42,6 +42,7 @@ import { Globe, Plus, Star, Link2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
+import { getLanguageWithFlag } from '@/i18n/config';
 
 interface Type {
   id: number;
@@ -88,6 +89,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
   const [description, setDescription] = useState<string>(
     individual?.description ?? ''
   );
+  const initialDescriptionRef = useRef<string>(individual?.description ?? '');
   const [descriptionJson, setDescriptionJson] = useState<Json | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -219,6 +221,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       }
 
       toast.success(defaultValues.id ? 'Individual updated.' : 'Individual created.');
+      initialDescriptionRef.current = description;
 
       // Revalidate frontend cache
       await revalidateIndividual(data.slug);
@@ -265,7 +268,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
   return (
     <div className="p-4">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-20">
           <fieldset
             disabled={loading}
             className="grid md:grid-cols-[2fr_1fr] gap-4"
@@ -485,6 +488,10 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                                 (l) => l.code === translation.language
                               );
                               const isCurrent = translation.id === defaultValues.id;
+                              const displayName = getLanguageWithFlag(
+                                translation.language,
+                                lang?.native_name || translation.language.toUpperCase()
+                              );
                               return isCurrent ? (
                                 <Badge
                                   key={translation.id}
@@ -492,7 +499,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                                   className="text-xs gap-1 cursor-default py-1.5 px-3"
                                 >
                                   {translation.is_original && <Star className="h-3 w-3 fill-current" />}
-                                  {lang?.native_name || translation.language.toUpperCase()}
+                                  {displayName}
                                 </Badge>
                               ) : (
                                 <Link key={translation.id} href={`/individuals/${translation.slug}`}>
@@ -501,7 +508,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                                     className="text-xs gap-1 cursor-pointer hover:bg-background py-1.5 px-3"
                                   >
                                     {translation.is_original && <Star className="h-3 w-3 fill-current" />}
-                                    {lang?.native_name || translation.language.toUpperCase()}
+                                    {displayName}
                                   </Badge>
                                 </Link>
                               );
@@ -525,7 +532,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                                 className="gap-1 h-8"
                               >
                                 <Plus className="h-3 w-3" />
-                                {lang.native_name}
+                                {getLanguageWithFlag(lang.code, lang.native_name)}
                               </Button>
                             ))}
                           </div>
@@ -585,6 +592,32 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
               </CardContent>
             </Card>
           </fieldset>
+
+          {/* Sticky Bottom Action Bar - appears when form is dirty */}
+          {(form.formState.isDirty || description !== initialDescriptionRef.current) && (
+            <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card">
+              <div className="flex h-14 items-center justify-end gap-4 px-4 md:px-6">
+                <span className="text-sm text-muted-foreground mr-auto">
+                  Unsaved changes
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    form.reset();
+                    setDescription(initialDescriptionRef.current);
+                  }}
+                  disabled={loading}
+                >
+                  Discard
+                </Button>
+                <Button type="submit" size="sm" disabled={loading}>
+                  {loading ? 'Saving...' : (defaultValues.id ? 'Save changes' : 'Create')}
+                </Button>
+              </div>
+            </div>
+          )}
         </form>
       </Form>
     </div>

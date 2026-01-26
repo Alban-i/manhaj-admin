@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { ArticleForTimeline } from '@/actions/get-articles-for-timeline';
-import { TimelineEvent } from '@/actions/get-timeline-events';
+import { TimelineEvent, TimelineEventNested, nestEvents } from '@/types/timeline';
+import { ProfilesWithRoles } from '@/types/types';
 import {
   addArticleToTimeline,
   removeArticleFromTimeline,
   updateTimelineArticleOrder,
+  setEventParent,
 } from '@/actions/upsert-timeline';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Command,
@@ -33,33 +34,97 @@ import {
   Calendar,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  FilePlus,
+  ChevronDown as CollapseIcon,
+  ChevronRight as ExpandIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatHijriForDisplay } from '@/lib/hijri-utils';
+import CreateArticleSheet from './create-article-sheet';
 
 interface ArticleSelectorProps {
   timelineId: string;
+  timelineSlug: string;
+  timelineLanguage: string;
+  timelineCategoryId?: number;
+  timelineCategoryName?: string;
   availableArticles: ArticleForTimeline[];
   timelineEvents: TimelineEvent[];
+  authors: ProfilesWithRoles[];
 }
 
 const ArticleSelector: React.FC<ArticleSelectorProps> = ({
   timelineId,
+  timelineSlug,
+  timelineLanguage,
+  timelineCategoryId,
+  timelineCategoryName,
   availableArticles,
   timelineEvents,
+  authors,
 }) => {
   const [open, setOpen] = useState(false);
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [events, setEvents] = useState(timelineEvents);
+  const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
   const router = useRouter();
+
+  // Build nested structure from flat events
+  const nestedEvents = useMemo(() => nestEvents(events), [events]);
+
+  // Flatten nested events for display (respecting collapsed state)
+  const flattenedForDisplay = useMemo(() => {
+    const result: { event: TimelineEvent; isChild: boolean; parentId: string | null; flatIndex: number }[] = [];
+    let flatIndex = 0;
+
+    nestedEvents.forEach((parent) => {
+      result.push({ event: parent, isChild: false, parentId: null, flatIndex: flatIndex++ });
+
+      if (!collapsedParents.has(parent.id) && parent.children.length > 0) {
+        parent.children.forEach((child) => {
+          result.push({ event: child, isChild: true, parentId: parent.id, flatIndex: flatIndex++ });
+        });
+      }
+    });
+
+    return result;
+  }, [nestedEvents, collapsedParents]);
+
+  // Toggle collapsed state
+  const toggleCollapsed = (eventId: string) => {
+    setCollapsedParents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
 
   // Get article IDs already in the timeline
   const selectedArticleIds = events.map((e) => e.article_id);
 
-  // Filter available articles (not already in timeline)
-  const unselectedArticles = availableArticles.filter(
-    (article) => !selectedArticleIds.includes(article.id)
-  );
+  // Filter available articles:
+  // 1. Not already in timeline
+  // 2. Same language as timeline
+  // 3. Same category as timeline (if timeline has a category)
+  const unselectedArticles = availableArticles.filter((article) => {
+    // Already in timeline
+    if (selectedArticleIds.includes(article.id)) return false;
+
+    // Must match timeline language
+    if (article.language !== timelineLanguage) return false;
+
+    // Must match timeline category (if timeline has a category set)
+    if (timelineCategoryId && article.category_id !== timelineCategoryId) return false;
+
+    return true;
+  });
 
   const handleAddArticle = async (article: ArticleForTimeline) => {
     setOpen(false);
@@ -97,50 +162,255 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
     });
   };
 
-  const handleMoveUp = async (index: number) => {
-    if (index === 0) return;
+  // Get the event above in the flat list (for indent operation)
+  const getEventAbove = (flatIndex: number): TimelineEvent | null => {
+    if (flatIndex <= 0) return null;
+    return flattenedForDisplay[flatIndex - 1].event;
+  };
 
-    const newEvents = [...events];
-    [newEvents[index - 1], newEvents[index]] = [newEvents[index], newEvents[index - 1]];
+  // Check if an event can be indented (made a child of the event above)
+  const canIndent = (flatIndex: number): boolean => {
+    const item = flattenedForDisplay[flatIndex];
+    if (item.isChild) return false; // Already a child, can't go deeper
 
-    // Update display orders
-    const updatedItems = newEvents.map((event, idx) => ({
-      id: event.id,
-      display_order: idx + 1,
-    }));
+    const eventAbove = getEventAbove(flatIndex);
+    if (!eventAbove) return false;
 
-    setEvents(newEvents);
+    // Check if event above is a child (can't make a child of a child)
+    const itemAbove = flattenedForDisplay[flatIndex - 1];
+    if (itemAbove.isChild) return false;
+
+    // Check if current event has children (can't make a parent into a child)
+    const nestedEvent = nestedEvents.find(e => e.id === item.event.id);
+    if (nestedEvent && nestedEvent.children.length > 0) return false;
+
+    return true;
+  };
+
+  // Check if an event can be outdented (promoted to top level)
+  const canOutdent = (item: { isChild: boolean }): boolean => {
+    return item.isChild;
+  };
+
+  // Handle indent (make event a child of the event above)
+  const handleIndent = async (flatIndex: number) => {
+    const item = flattenedForDisplay[flatIndex];
+    const eventAbove = flattenedForDisplay[flatIndex - 1];
+    if (!eventAbove || item.isChild) return;
 
     startTransition(async () => {
-      const result = await updateTimelineArticleOrder(updatedItems);
+      const result = await setEventParent(item.event.id, eventAbove.event.id);
       if (!result.success) {
-        toast.error('Failed to reorder');
-        setEvents(events); // Revert
+        toast.error(result.error || 'Failed to indent');
+        return;
       }
+
+      // Update local state
+      setEvents(prev => prev.map(e =>
+        e.id === item.event.id ? { ...e, parent_id: eventAbove.event.id } : e
+      ));
+      toast.success('Event indented');
     });
   };
 
-  const handleMoveDown = async (index: number) => {
-    if (index === events.length - 1) return;
-
-    const newEvents = [...events];
-    [newEvents[index], newEvents[index + 1]] = [newEvents[index + 1], newEvents[index]];
-
-    // Update display orders
-    const updatedItems = newEvents.map((event, idx) => ({
-      id: event.id,
-      display_order: idx + 1,
-    }));
-
-    setEvents(newEvents);
+  // Handle outdent (promote child to top level)
+  const handleOutdent = async (flatIndex: number) => {
+    const item = flattenedForDisplay[flatIndex];
+    if (!item.isChild) return;
 
     startTransition(async () => {
-      const result = await updateTimelineArticleOrder(updatedItems);
+      const result = await setEventParent(item.event.id, null);
       if (!result.success) {
-        toast.error('Failed to reorder');
-        setEvents(events); // Revert
+        toast.error(result.error || 'Failed to outdent');
+        return;
       }
+
+      // Update local state
+      setEvents(prev => prev.map(e =>
+        e.id === item.event.id ? { ...e, parent_id: null } : e
+      ));
+      toast.success('Event moved to top level');
     });
+  };
+
+  // Move within same level (up)
+  const handleMoveUp = async (flatIndex: number) => {
+    const item = flattenedForDisplay[flatIndex];
+
+    if (item.isChild) {
+      // Find siblings (other children of the same parent)
+      const parentEvent = nestedEvents.find(e => e.id === item.parentId);
+      if (!parentEvent) return;
+
+      const siblingIndex = parentEvent.children.findIndex(c => c.id === item.event.id);
+      if (siblingIndex <= 0) return;
+
+      // Swap with sibling above
+      const newChildren = [...parentEvent.children];
+      [newChildren[siblingIndex - 1], newChildren[siblingIndex]] = [newChildren[siblingIndex], newChildren[siblingIndex - 1]];
+
+      const updatedItems = newChildren.map((child, idx) => ({
+        id: child.id,
+        display_order: idx + 1,
+      }));
+
+      // Optimistic update
+      setEvents(prev => {
+        const updated = [...prev];
+        newChildren.forEach((child, idx) => {
+          const eventIndex = updated.findIndex(e => e.id === child.id);
+          if (eventIndex !== -1) {
+            updated[eventIndex] = { ...updated[eventIndex], display_order: idx + 1 };
+          }
+        });
+        return updated;
+      });
+
+      startTransition(async () => {
+        const result = await updateTimelineArticleOrder(updatedItems);
+        if (!result.success) {
+          toast.error('Failed to reorder');
+          router.refresh();
+        }
+      });
+    } else {
+      // Move top-level event
+      const topLevelIndex = nestedEvents.findIndex(e => e.id === item.event.id);
+      if (topLevelIndex <= 0) return;
+
+      const newTopLevel = [...nestedEvents];
+      [newTopLevel[topLevelIndex - 1], newTopLevel[topLevelIndex]] = [newTopLevel[topLevelIndex], newTopLevel[topLevelIndex - 1]];
+
+      // Get all top-level events for reordering (excluding children)
+      const updatedItems = newTopLevel.map((event, idx) => ({
+        id: event.id,
+        display_order: idx + 1,
+      }));
+
+      // Optimistic update
+      setEvents(prev => {
+        const updated = [...prev];
+        newTopLevel.forEach((event, idx) => {
+          const eventIndex = updated.findIndex(e => e.id === event.id);
+          if (eventIndex !== -1) {
+            updated[eventIndex] = { ...updated[eventIndex], display_order: idx + 1 };
+          }
+        });
+        return updated;
+      });
+
+      startTransition(async () => {
+        const result = await updateTimelineArticleOrder(updatedItems);
+        if (!result.success) {
+          toast.error('Failed to reorder');
+          router.refresh();
+        }
+      });
+    }
+  };
+
+  // Move within same level (down)
+  const handleMoveDown = async (flatIndex: number) => {
+    const item = flattenedForDisplay[flatIndex];
+
+    if (item.isChild) {
+      // Find siblings (other children of the same parent)
+      const parentEvent = nestedEvents.find(e => e.id === item.parentId);
+      if (!parentEvent) return;
+
+      const siblingIndex = parentEvent.children.findIndex(c => c.id === item.event.id);
+      if (siblingIndex >= parentEvent.children.length - 1) return;
+
+      // Swap with sibling below
+      const newChildren = [...parentEvent.children];
+      [newChildren[siblingIndex], newChildren[siblingIndex + 1]] = [newChildren[siblingIndex + 1], newChildren[siblingIndex]];
+
+      const updatedItems = newChildren.map((child, idx) => ({
+        id: child.id,
+        display_order: idx + 1,
+      }));
+
+      // Optimistic update
+      setEvents(prev => {
+        const updated = [...prev];
+        newChildren.forEach((child, idx) => {
+          const eventIndex = updated.findIndex(e => e.id === child.id);
+          if (eventIndex !== -1) {
+            updated[eventIndex] = { ...updated[eventIndex], display_order: idx + 1 };
+          }
+        });
+        return updated;
+      });
+
+      startTransition(async () => {
+        const result = await updateTimelineArticleOrder(updatedItems);
+        if (!result.success) {
+          toast.error('Failed to reorder');
+          router.refresh();
+        }
+      });
+    } else {
+      // Move top-level event
+      const topLevelIndex = nestedEvents.findIndex(e => e.id === item.event.id);
+      if (topLevelIndex >= nestedEvents.length - 1) return;
+
+      const newTopLevel = [...nestedEvents];
+      [newTopLevel[topLevelIndex], newTopLevel[topLevelIndex + 1]] = [newTopLevel[topLevelIndex + 1], newTopLevel[topLevelIndex]];
+
+      // Get all top-level events for reordering (excluding children)
+      const updatedItems = newTopLevel.map((event, idx) => ({
+        id: event.id,
+        display_order: idx + 1,
+      }));
+
+      // Optimistic update
+      setEvents(prev => {
+        const updated = [...prev];
+        newTopLevel.forEach((event, idx) => {
+          const eventIndex = updated.findIndex(e => e.id === event.id);
+          if (eventIndex !== -1) {
+            updated[eventIndex] = { ...updated[eventIndex], display_order: idx + 1 };
+          }
+        });
+        return updated;
+      });
+
+      startTransition(async () => {
+        const result = await updateTimelineArticleOrder(updatedItems);
+        if (!result.success) {
+          toast.error('Failed to reorder');
+          router.refresh();
+        }
+      });
+    }
+  };
+
+  // Check if move up is possible
+  const canMoveUp = (flatIndex: number): boolean => {
+    const item = flattenedForDisplay[flatIndex];
+    if (item.isChild) {
+      const parentEvent = nestedEvents.find(e => e.id === item.parentId);
+      if (!parentEvent) return false;
+      const siblingIndex = parentEvent.children.findIndex(c => c.id === item.event.id);
+      return siblingIndex > 0;
+    } else {
+      const topLevelIndex = nestedEvents.findIndex(e => e.id === item.event.id);
+      return topLevelIndex > 0;
+    }
+  };
+
+  // Check if move down is possible
+  const canMoveDown = (flatIndex: number): boolean => {
+    const item = flattenedForDisplay[flatIndex];
+    if (item.isChild) {
+      const parentEvent = nestedEvents.find(e => e.id === item.parentId);
+      if (!parentEvent) return false;
+      const siblingIndex = parentEvent.children.findIndex(c => c.id === item.event.id);
+      return siblingIndex < parentEvent.children.length - 1;
+    } else {
+      const topLevelIndex = nestedEvents.findIndex(e => e.id === item.event.id);
+      return topLevelIndex < nestedEvents.length - 1;
+    }
   };
 
   const formatEventDate = (event: TimelineEvent) => {
@@ -163,20 +433,35 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Add Article Button */}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-start gap-2"
-            disabled={isPending}
-          >
-            <Plus className="h-4 w-4" />
-            Add article to timeline
-          </Button>
-        </PopoverTrigger>
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        {/* Create New Article Button */}
+        <Button
+          type="button"
+          variant="default"
+          className="gap-2"
+          onClick={() => setCreateSheetOpen(true)}
+          disabled={isPending}
+        >
+          <FilePlus className="h-4 w-4" />
+          Create New Article
+        </Button>
+
+        {/* Add Existing Article Button */}
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="flex-1 justify-start gap-2"
+              disabled={isPending}
+            >
+              <Plus className="h-4 w-4" />
+              Add existing article
+            </Button>
+          </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0" align="start">
           <Command>
             <CommandInput placeholder="Search articles..." />
@@ -207,6 +492,19 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
           </Command>
         </PopoverContent>
       </Popover>
+      </div>
+
+      {/* Create Article Sheet */}
+      <CreateArticleSheet
+        open={createSheetOpen}
+        onOpenChange={setCreateSheetOpen}
+        timelineId={timelineId}
+        timelineSlug={timelineSlug}
+        timelineLanguage={timelineLanguage}
+        timelineCategoryId={timelineCategoryId}
+        timelineCategoryName={timelineCategoryName}
+        authors={authors}
+      />
 
       {/* Timeline Events List */}
       <div className="space-y-2">
@@ -215,24 +513,51 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
             No articles added to this timeline yet.
           </p>
         ) : (
-          events.map((event, index) => {
+          flattenedForDisplay.map(({ event, isChild, parentId, flatIndex }) => {
             const dateDisplay = formatEventDate(event);
+            const nestedEvent = nestedEvents.find(e => e.id === event.id);
+            const hasChildren = nestedEvent && nestedEvent.children.length > 0;
+            const isCollapsed = collapsedParents.has(event.id);
+
             return (
               <div
                 key={event.id}
                 className={cn(
                   'flex items-center gap-2 p-3 border rounded-lg bg-background',
-                  isPending && 'opacity-50'
+                  isPending && 'opacity-50',
+                  isChild && 'ml-8 border-l-4 border-l-muted-foreground/30'
                 )}
               >
+                {/* Expand/Collapse for parents */}
+                {hasChildren ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={() => toggleCollapsed(event.id)}
+                    disabled={isPending}
+                  >
+                    {isCollapsed ? (
+                      <ExpandIcon className="h-4 w-4" />
+                    ) : (
+                      <CollapseIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                ) : (
+                  <div className="w-6 shrink-0" />
+                )}
+
+                {/* Move up/down arrows */}
                 <div className="flex flex-col gap-0.5">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     className="h-5 w-5"
-                    onClick={() => handleMoveUp(index)}
-                    disabled={index === 0 || isPending}
+                    onClick={() => handleMoveUp(flatIndex)}
+                    disabled={!canMoveUp(flatIndex) || isPending}
+                    title="Move up"
                   >
                     <ChevronUp className="h-3 w-3" />
                   </Button>
@@ -241,17 +566,44 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
                     variant="ghost"
                     size="icon"
                     className="h-5 w-5"
-                    onClick={() => handleMoveDown(index)}
-                    disabled={index === events.length - 1 || isPending}
+                    onClick={() => handleMoveDown(flatIndex)}
+                    disabled={!canMoveDown(flatIndex) || isPending}
+                    title="Move down"
                   >
                     <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                {/* Indent/Outdent arrows */}
+                <div className="flex flex-col gap-0.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    onClick={() => handleIndent(flatIndex)}
+                    disabled={!canIndent(flatIndex) || isPending}
+                    title="Make sub-event (indent)"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    onClick={() => handleOutdent(flatIndex)}
+                    disabled={!canOutdent({ isChild }) || isPending}
+                    title="Promote to top level (outdent)"
+                  >
+                    <ChevronLeft className="h-3 w-3" />
                   </Button>
                 </div>
 
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
 
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">
+                  <p className={cn('font-medium truncate', isChild && 'text-sm')}>
                     {event.custom_title || event.article.title}
                   </p>
                   {dateDisplay && (
@@ -262,9 +614,19 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
                   )}
                 </div>
 
-                <Badge variant="outline" className="shrink-0">
-                  #{index + 1}
-                </Badge>
+                {/* Badge showing position and hierarchy info */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {hasChildren && (
+                    <Badge variant="secondary" className="text-xs">
+                      {nestedEvent.children.length} sub
+                    </Badge>
+                  )}
+                  {isChild && (
+                    <Badge variant="outline" className="text-xs bg-muted">
+                      sub
+                    </Badge>
+                  )}
+                </div>
 
                 <Button
                   type="button"
@@ -273,6 +635,7 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
                   className="h-8 w-8 text-destructive hover:text-destructive"
                   onClick={() => handleRemoveArticle(event.article_id)}
                   disabled={isPending}
+                  title={hasChildren ? 'Delete (children will be promoted)' : 'Remove'}
                 >
                   <X className="h-4 w-4" />
                 </Button>

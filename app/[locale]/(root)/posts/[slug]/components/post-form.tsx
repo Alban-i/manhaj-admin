@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Posts, ProfilesWithRoles, Language } from '@/types/types';
@@ -40,9 +40,10 @@ import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
 import ImageUpload from '@/components/image-upload';
 import { revalidatePosts } from '@/actions/revalidate';
-import { Globe, Plus, ExternalLink } from 'lucide-react';
+import { Globe, Plus, ExternalLink, FileEdit, Archive } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { getLanguageWithFlag } from '@/i18n/config';
 
 const initialData: Omit<Posts, 'id'> & { id: null } = {
   id: null,
@@ -91,6 +92,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<string>(post?.content || '');
+  const initialContentRef = useRef<string>(post?.content || '');
   const [contentJson, setContentJson] = useState<Json | null>(null);
   type FormStatus = 'draft' | 'published' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
@@ -177,6 +179,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
         }
 
         toast.success('Post updated successfully');
+        initialContentRef.current = content;
 
         // Revalidate frontend cache
         await revalidatePosts();
@@ -195,6 +198,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
         }
 
         toast.success('Post created successfully');
+        initialContentRef.current = content;
 
         // Revalidate frontend cache
         await revalidatePosts();
@@ -253,7 +257,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
             console.log('Form submission triggered');
             form.handleSubmit(onSubmit)(e);
           }}
-          className="space-y-6"
+          className="space-y-6 pb-20"
         >
           <fieldset
             disabled={loading}
@@ -316,9 +320,9 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
                       state={status}
                       setState={(value) => setStatus(value as FormStatus)}
                       picklist={[
-                        { value: 'draft', label: 'Draft' },
-                        { value: 'published', label: 'Published' },
-                        { value: 'archived', label: 'Archived' },
+                        { value: 'draft', label: <span className="flex items-center gap-1.5"><FileEdit className="h-3.5 w-3.5" />Draft</span> },
+                        { value: 'published', label: <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />Published</span> },
+                        { value: 'archived', label: <span className="flex items-center gap-1.5"><Archive className="h-3.5 w-3.5" />Archived</span> },
                       ]}
                     />
                   </div>
@@ -536,6 +540,10 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
                               (l) => l.code === translation.language
                             );
                             const isCurrent = translation.id === defaultValues.id;
+                            const displayName = getLanguageWithFlag(
+                              translation.language,
+                              lang?.native_name || translation.language.toUpperCase()
+                            );
                             return (
                               <div
                                 key={translation.id}
@@ -548,7 +556,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
                                     variant={isCurrent ? 'default' : 'outline'}
                                     className="text-xs"
                                   >
-                                    {lang?.native_name || translation.language.toUpperCase()}
+                                    {displayName}
                                   </Badge>
                                   {translation.is_original && (
                                     <Badge variant="secondary" className="text-xs">
@@ -594,7 +602,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
                               className="gap-1"
                             >
                               <Plus className="h-3 w-3" />
-                              {lang.native_name}
+                              {getLanguageWithFlag(lang.code, lang.native_name)}
                             </Button>
                           ))}
                         </div>
@@ -640,6 +648,32 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
               </CardContent>
             </Card>
           </fieldset>
+
+          {/* Sticky Bottom Action Bar - appears when form is dirty */}
+          {(form.formState.isDirty || content !== initialContentRef.current) && (
+            <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card">
+              <div className="flex h-14 items-center justify-end gap-4 px-4 md:px-6">
+                <span className="text-sm text-muted-foreground mr-auto">
+                  Unsaved changes
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    form.reset();
+                    setContent(initialContentRef.current);
+                  }}
+                  disabled={loading}
+                >
+                  Discard
+                </Button>
+                <Button type="submit" size="sm" disabled={loading}>
+                  {loading ? 'Saving...' : action}
+                </Button>
+              </div>
+            </div>
+          )}
         </form>
       </Form>
     </div>

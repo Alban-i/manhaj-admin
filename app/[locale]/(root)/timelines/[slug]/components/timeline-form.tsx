@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Timeline, Language } from '@/types/types';
+import { Timeline, Language, ProfilesWithRoles } from '@/types/types';
 import { ArticleForTimeline } from '@/actions/get-articles-for-timeline';
-import { TimelineEvent } from '@/actions/get-timeline-events';
+import { TimelineEvent } from '@/types/timeline';
 
 import {
   Form,
@@ -30,12 +30,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Checkbox } from '@/components/ui/checkbox';
+import { TabToggle } from '@/components/ui/tab-toggle';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Globe, Eye } from 'lucide-react';
+import { Globe, Eye, Star, Plus, FileEdit, Archive } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { FormDescription } from '@/components/ui/form';
+import { getLanguageWithFlag } from '@/i18n/config';
+import { TimelineTranslation } from '@/actions/get-timeline-translations';
 import {
   upsertTimeline,
   deleteTimeline,
@@ -48,15 +53,19 @@ const formSchema = z.object({
   slug: z.string().min(1, 'Slug is required'),
   description: z.string().optional(),
   image_url: z.string().optional(),
-  is_published: z.boolean(),
   language: z.string().min(1, 'Language is required'),
+  category_id: z.string().optional(),
+  is_original: z.boolean(),
 });
 
 interface TimelineFormProps {
-  timeline: Timeline | null;
+  timeline: (Omit<Timeline, 'id'> & { id?: string; is_original?: boolean }) | null;
   languages: Language[];
   availableArticles: ArticleForTimeline[];
   timelineEvents: TimelineEvent[];
+  categories: { id: number; name: string }[];
+  authors: ProfilesWithRoles[];
+  translations: TimelineTranslation[];
 }
 
 const TimelineForm: React.FC<TimelineFormProps> = ({
@@ -64,16 +73,26 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
   languages,
   availableArticles,
   timelineEvents,
+  categories,
+  authors,
+  translations,
 }) => {
   const defaultValues = {
+    id: timeline?.id,
     title: timeline?.title ?? '',
     slug: timeline?.slug ?? '',
     description: timeline?.description ?? '',
     image_url: timeline?.image_url ?? '',
-    is_published: timeline?.is_published ?? false,
     language: timeline?.language ?? 'ar',
+    category_id: timeline?.category_id?.toString() ?? undefined,
+    is_original: timeline?.is_original ?? true,
+    translation_group_id: timeline?.translation_group_id ?? null,
   };
 
+  type FormStatus = 'draft' | 'published' | 'archived';
+  const [status, setStatus] = useState<FormStatus>(
+    (timeline?.status?.toLowerCase() as FormStatus) ?? 'draft'
+  );
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -81,8 +100,46 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: {
+      title: defaultValues.title,
+      slug: defaultValues.slug,
+      description: defaultValues.description,
+      image_url: defaultValues.image_url,
+      language: defaultValues.language,
+      category_id: defaultValues.category_id,
+      is_original: defaultValues.is_original,
+    },
   });
+
+  // Get available languages for translation (excluding existing translation languages)
+  const availableLanguagesForTranslation = languages.filter(
+    (lang) => !translations.some((t) => t.language === lang.code)
+  );
+
+  // Create translation function
+  const createTranslation = (targetLanguage: string) => {
+    const targetLang = languages.find((l) => l.code === targetLanguage);
+    if (!targetLang || !defaultValues.id) return;
+
+    // Generate slug with language suffix
+    const baseSlug = defaultValues.slug ?? '';
+    const newSlug = `${baseSlug}-${targetLanguage}`;
+
+    // Navigate to new timeline page with translation params
+    const params = new URLSearchParams({
+      translate_from: defaultValues.id,
+      translation_group_id: defaultValues.translation_group_id ?? defaultValues.id,
+      language: targetLanguage,
+      slug: newSlug,
+    });
+
+    // Include category_id if it exists
+    if (defaultValues.category_id) {
+      params.set('category_id', defaultValues.category_id);
+    }
+
+    router.push(`/timelines/new?${params.toString()}`);
+  };
 
   // Labels
   const toastMessage = timeline?.id
@@ -100,8 +157,11 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
         title: values.title,
         description: values.description || null,
         image_url: values.image_url || null,
-        is_published: values.is_published,
+        status: status,
         language: values.language,
+        category_id: values.category_id ? Number(values.category_id) : null,
+        is_original: values.is_original,
+        translation_group_id: defaultValues.translation_group_id,
       });
 
       if (!result.success) {
@@ -253,21 +313,47 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
 
                   <FormField
                     control={form.control}
-                    name="is_published"
+                    name="category_id"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-2 space-y-0 border rounded-md p-2">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Publish timeline</FormLabel>
-                        </div>
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl className="w-full">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem
+                                key={category.id}
+                                value={category.id.toString()}
+                              >
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  <div>
+                    <FormLabel className="mb-2">Status</FormLabel>
+                    <TabToggle
+                      state={status}
+                      setState={(value) => setStatus(value as FormStatus)}
+                      picklist={[
+                        { value: 'draft', label: <span className="flex items-center gap-1.5"><FileEdit className="h-3.5 w-3.5" />Draft</span> },
+                        { value: 'published', label: <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />Published</span> },
+                        { value: 'archived', label: <span className="flex items-center gap-1.5"><Archive className="h-3.5 w-3.5" />Archived</span> },
+                      ]}
+                    />
+                  </div>
 
                   <div className="col-span-2">
                     <FormField
@@ -303,8 +389,17 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                   <CardContent>
                     <ArticleSelector
                       timelineId={timeline.id}
+                      timelineSlug={timeline.slug}
+                      timelineLanguage={form.watch('language')}
+                      timelineCategoryId={form.watch('category_id') ? Number(form.watch('category_id')) : undefined}
+                      timelineCategoryName={
+                        form.watch('category_id')
+                          ? categories.find((c) => c.id.toString() === form.watch('category_id'))?.name
+                          : undefined
+                      }
                       availableArticles={availableArticles}
                       timelineEvents={timelineEvents}
+                      authors={authors}
                     />
                   </CardContent>
                 </Card>
@@ -338,6 +433,111 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                   />
                 </CardContent>
               </Card>
+
+              {/* Translations */}
+              {defaultValues.id && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="h-5 w-5" />
+                      Translations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Existing translations */}
+                    {translations.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-sm text-muted-foreground">Available translations:</span>
+                        <div className="flex flex-wrap items-center gap-2 p-3 rounded-md border bg-muted/50">
+                          {translations.map((translation) => {
+                            const lang = languages.find(
+                              (l) => l.code === translation.language
+                            );
+                            const isCurrent = translation.id === defaultValues.id;
+                            const displayName = getLanguageWithFlag(
+                              translation.language,
+                              lang?.native_name || translation.language.toUpperCase()
+                            );
+                            return isCurrent ? (
+                              <Badge
+                                key={translation.id}
+                                variant="default"
+                                className="text-xs gap-1 cursor-default py-1.5 px-3"
+                              >
+                                {translation.is_original && <Star className="h-3 w-3 fill-current" />}
+                                {displayName}
+                              </Badge>
+                            ) : (
+                              <Link key={translation.id} href={`/timelines/${translation.slug}`}>
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs gap-1 cursor-pointer hover:bg-background py-1.5 px-3"
+                                >
+                                  {translation.is_original && <Star className="h-3 w-3 fill-current" />}
+                                  {displayName}
+                                </Badge>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Create new translation */}
+                    {availableLanguagesForTranslation.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-sm text-muted-foreground">Add translation:</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {availableLanguagesForTranslation.map((lang) => (
+                            <Button
+                              key={lang.code}
+                              variant="outline"
+                              size="sm"
+                              type="button"
+                              onClick={() => createTranslation(lang.code)}
+                              className="gap-1 h-8"
+                            >
+                              <Plus className="h-3 w-3" />
+                              {getLanguageWithFlag(lang.code, lang.native_name)}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {translations.length === 0 &&
+                      availableLanguagesForTranslation.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No translations available.
+                        </p>
+                      )}
+
+                    {/* Mark as original */}
+                    <div className="pt-2 border-t">
+                      <FormField
+                        control={form.control}
+                        name="is_original"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Mark as original</FormLabel>
+                              <FormDescription>
+                                Source timeline for translations
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </fieldset>
         </form>

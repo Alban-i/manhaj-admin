@@ -1,13 +1,16 @@
 'use client';
 
-import { TimelineEvent } from '@/actions/get-timeline-events';
+import { TimelineEvent } from '@/types/timeline';
 import { cn } from '@/lib/utils';
+import { Plus } from 'lucide-react';
 
 interface TimelineNodeProps {
   event: TimelineEvent;
   isSelected: boolean;
   isFirst: boolean;
   isLast: boolean;
+  isChild?: boolean;
+  hasChildren?: boolean;
   onClick: () => void;
 }
 
@@ -16,6 +19,8 @@ const TimelineNode: React.FC<TimelineNodeProps> = ({
   isSelected,
   isFirst,
   isLast,
+  isChild = false,
+  hasChildren = false,
   onClick,
 }) => {
   // Get the date to display (custom or from article)
@@ -36,6 +41,10 @@ const TimelineNode: React.FC<TimelineNodeProps> = ({
 
   const title = event.custom_title || event.article.title;
 
+  // Node size - same for all nodes (parent and child)
+  const nodeSize = 'w-6 h-6';
+  const innerDotSize = 'w-2 h-2';
+
   return (
     <button
       onClick={onClick}
@@ -47,18 +56,24 @@ const TimelineNode: React.FC<TimelineNodeProps> = ({
       {/* Node dot */}
       <div
         className={cn(
-          'relative z-10 flex-shrink-0 w-6 h-6 rounded-full border-2 bg-background flex items-center justify-center',
+          'relative z-10 flex-shrink-0 rounded-full border-2 bg-background flex items-center justify-center',
+          nodeSize,
           isSelected
             ? 'border-primary bg-primary'
             : 'border-muted-foreground/30'
         )}
       >
-        <div
-          className={cn(
-            'w-2 h-2 rounded-full',
-            isSelected ? 'bg-primary-foreground' : 'bg-muted-foreground/30'
-          )}
-        />
+        {hasChildren ? (
+          <Plus className={cn('text-muted-foreground', isSelected ? 'text-primary-foreground' : '')} size={12} />
+        ) : (
+          <div
+            className={cn(
+              'rounded-full',
+              innerDotSize,
+              isSelected ? 'bg-primary-foreground' : 'bg-muted-foreground/30'
+            )}
+          />
+        )}
       </div>
 
       {/* Content */}
@@ -79,7 +94,7 @@ const TimelineNode: React.FC<TimelineNodeProps> = ({
         {/* Title */}
         <p
           className={cn(
-            'text-sm font-medium truncate',
+            'font-medium truncate text-sm',
             isSelected && 'text-primary'
           )}
         >

@@ -1,6 +1,6 @@
 'use client';
 
-import { TimelineEvent } from '@/actions/get-timeline-events';
+import { TimelineEvent } from '@/types/timeline';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar, ExternalLink } from 'lucide-react';
