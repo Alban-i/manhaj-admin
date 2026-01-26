@@ -15,30 +15,17 @@ export const FootnoteV2NodeView: React.FC<FootnoteV2NodeViewProps> = ({
   deleteNode,
   editor,
 }) => {
-  const footnoteId = node.attrs.id;
+  const footnoteId = node.attrs['data-id'];
 
-  // Calculate the footnote reference number by finding the corresponding reference
+  // Get footnote number from the id attribute (format: "fn:1", "fn:2", etc.)
+  // This is managed by FootnoteV2Rules plugin
   const referenceNumber = useMemo(() => {
-    if (!footnoteId || !editor) return 1;
-
-    const { doc } = editor.state;
-    let foundNumber = 1;
-    let count = 1;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    doc.descendants((descendantNode: any) => {
-      if (descendantNode.type.name === 'footnoteReferenceV2') {
-        if (descendantNode.attrs.footnoteId === footnoteId) {
-          foundNumber = count;
-          return false; // Stop searching
-        }
-        count += 1;
-      }
-      return true;
-    });
-
-    return foundNumber;
-  }, [footnoteId, editor]);
+    const id = node.attrs.id;
+    if (typeof id === 'string' && id.startsWith('fn:')) {
+      return parseInt(id.slice(3), 10) || 1;
+    }
+    return 1;
+  }, [node.attrs.id]);
 
   const handleBackNavigation = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -50,7 +37,7 @@ export const FootnoteV2NodeView: React.FC<FootnoteV2NodeViewProps> = ({
       doc.descendants((refNode: any, pos: number) => {
         if (
           refNode.type.name === 'footnoteReferenceV2' &&
-          refNode.attrs.footnoteId === footnoteId
+          refNode.attrs['data-id'] === footnoteId
         ) {
           // Scroll to the reference position
           editor.commands.setTextSelection(pos);
@@ -58,7 +45,7 @@ export const FootnoteV2NodeView: React.FC<FootnoteV2NodeViewProps> = ({
           
           // Briefly highlight the reference
           const referenceElement = document.querySelector(
-            `span[data-footnote-id="${footnoteId}"][data-type="footnote-reference-v2"]`
+            `span[data-id="${footnoteId}"][data-type="footnote-reference-v2"]`
           );
           if (referenceElement) {
             referenceElement.classList.add('footnote-highlight');
@@ -75,13 +62,17 @@ export const FootnoteV2NodeView: React.FC<FootnoteV2NodeViewProps> = ({
 
   const handleDelete = () => {
     // Find and remove corresponding footnote reference
+    // The appendTransaction in FootnoteV2Rules will automatically:
+    // 1. Detect the reference was deleted
+    // 2. Remove the orphaned footnote
+    // 3. Renumber remaining footnotes
     if (footnoteId) {
       const { doc } = editor.state;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       doc.descendants((refNode: any, pos: number) => {
         if (
           refNode.type.name === 'footnoteReferenceV2' &&
-          refNode.attrs.footnoteId === footnoteId
+          refNode.attrs['data-id'] === footnoteId
         ) {
           editor.commands.deleteRange({ from: pos, to: pos + refNode.nodeSize });
           return false;
@@ -89,9 +80,7 @@ export const FootnoteV2NodeView: React.FC<FootnoteV2NodeViewProps> = ({
         return true;
       });
     }
-
-    // Delete the footnote itself
-    deleteNode();
+    // DO NOT call deleteNode() - appendTransaction handles footnote removal
   };
 
   return (
