@@ -1,5 +1,6 @@
 import { NodeViewContent, NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import React from 'react';
+import { Separator } from '@/components/ui/separator';
 
 interface FootnotesV2NodeViewProps extends NodeViewProps {
   updateAttributes: (attributes: Record<string, unknown>) => void;
@@ -12,15 +13,19 @@ export const FootnotesV2NodeView: React.FC<FootnotesV2NodeViewProps> = ({
   deleteNode,
 }) => {
   return (
-    <NodeViewWrapper className="footnotes-v2 mt-8 pt-8 border-t border-border">
-      <div className="footnotes-v2-header mb-4">
-        <h4 className="text-sm font-medium text-muted-foreground">
-          Footnotes
-        </h4>
+    <NodeViewWrapper className="footnotes-v2">
+      {/* Separator */}
+      <div className="flex justify-center px-8">
+        <Separator className="my-4 !h-[2px]" />
       </div>
-      <ol className="list-decimal list-inside space-y-2">
-        <NodeViewContent />
-      </ol>
+
+      {/* References container */}
+      <div className="rounded-md px-4 py-4 bg-card/50">
+        <div className="!text-xs font-semibold text-center">Références</div>
+        <ol className="[&>li>p]:!m-0">
+          <NodeViewContent />
+        </ol>
+      </div>
     </NodeViewWrapper>
   );
 };

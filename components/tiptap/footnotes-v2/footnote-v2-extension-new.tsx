@@ -1,5 +1,7 @@
 import { mergeAttributes } from '@tiptap/core';
 import ListItem from '@tiptap/extension-list-item';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import { FootnoteV2NodeView } from './footnote-v2-node-view';
 
 interface FootnoteV2Options {
   content: string;
@@ -146,5 +148,9 @@ export const FootnoteV2Extension = ListItem.extend<FootnoteV2Options>({
         return true;
       },
     };
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(FootnoteV2NodeView);
   },
 });

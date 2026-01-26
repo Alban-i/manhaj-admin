@@ -8,15 +8,34 @@ import {
   ROLE_READER,
   ROLE_AUTHOR,
 } from '@/constants/roles';
+import { locales, defaultLocale, type Locale } from '@/i18n/config';
+
+// Helper function to extract locale from pathname
+function getLocaleFromPathname(pathname: string): Locale {
+  const segments = pathname.split('/').filter(Boolean);
+  const firstSegment = segments[0];
+  if (firstSegment && locales.includes(firstSegment as Locale)) {
+    return firstSegment as Locale;
+  }
+  return defaultLocale;
+}
+
+// Helper function to get pathname without locale
+function getPathnameWithoutLocale(pathname: string): string {
+  const locale = getLocaleFromPathname(pathname);
+  const withoutLocale = pathname.replace(`/${locale}`, '') || '/';
+  return withoutLocale;
+}
 
 // Helper HTML for the form submission
-const getSignOutFormHtml = (url: string) => `
+const getSignOutFormHtml = (url: string, locale: Locale) => `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head><meta charset="UTF-8"></head>
 <body>
   <form action="${url}" method="POST" id="signout-form">
     <input type="hidden" name="redirect" value="true">
+    <input type="hidden" name="locale" value="${locale}">
   </form>
   <script>
     document.getElementById('signout-form').submit();
@@ -48,6 +67,10 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // Get locale from pathname
+  const locale = getLocaleFromPathname(request.nextUrl.pathname);
+  const pathnameWithoutLocale = getPathnameWithoutLocale(request.nextUrl.pathname);
+
   // Fetch the authenticated user
   const {
     data: { user },
@@ -55,17 +78,19 @@ export async function updateSession(request: NextRequest) {
 
   console.log('user', user);
   console.log('current pathname:', request.nextUrl.pathname);
+  console.log('locale:', locale);
+
+  // Public routes that don't require authentication (without locale prefix)
+  const publicRoutes = ['/login', '/api/auth', '/reset-password'];
+  const isPublicRoute = publicRoutes.some((route) =>
+    pathnameWithoutLocale.startsWith(route)
+  );
 
   // Redirect to login if no user is found and the route isn't public
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/api/auth') &&
-    !request.nextUrl.pathname.startsWith('/reset-password')
-  ) {
+  if (!user && !isPublicRoute) {
     console.log('Should redirect to login - condition met');
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
+    url.pathname = `/${locale}/login`;
 
     // Create a new redirect response
     const redirectResponse = NextResponse.redirect(url);
@@ -103,20 +128,20 @@ export async function updateSession(request: NextRequest) {
       // Check if the current path is allowed for regular users
       const isUserAllowed =
         teacherRoutes.some((route) =>
-          request.nextUrl.pathname.startsWith(route)
-        ) || request.nextUrl.pathname === '/';
+          pathnameWithoutLocale.startsWith(route)
+        ) || pathnameWithoutLocale === '/';
 
       if (!isUserAllowed) {
-        return NextResponse.redirect(new URL('/', request.url)); // Redirect to home
+        return NextResponse.redirect(new URL(`/${locale}/`, request.url)); // Redirect to home with locale
       }
     }
 
     if (role === ROLE_BANNED || role === ROLE_READER || !role) {
       // Prevent infinite loop for the auth signout route
-      if (!request.nextUrl.pathname.startsWith('/api/auth/signout')) {
+      if (!pathnameWithoutLocale.startsWith('/api/auth/signout')) {
         const signoutUrl = new URL('/api/auth/signout', request.url);
         // Return an HTML response that automatically submits a POST form
-        return new NextResponse(getSignOutFormHtml(signoutUrl.toString()), {
+        return new NextResponse(getSignOutFormHtml(signoutUrl.toString(), locale), {
           headers: {
             'Content-Type': 'text/html',
           },

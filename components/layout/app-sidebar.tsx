@@ -4,38 +4,26 @@ import * as React from 'react';
 import {
   Activity,
   AtSign,
-  BookCopy,
   BookOpen,
-  BookOpenCheck,
-  Bot,
-  CircleHelp,
-  Command,
   FileUser,
-  Frame,
+  Folder,
   GraduationCap,
   Hash,
   LifeBuoy,
   ListCheck,
-  Map,
-  MessageCircleQuestion,
-  PieChart,
   Send,
-  Settings2,
-  Signature,
-  SquareTerminal,
   StickyNote,
   TableOfContents,
   Tag,
   Twitter,
-  University,
-  UserRoundPen,
   Users,
   Image as ImageIcon,
   Music,
   Video,
   FileText,
-  Folder,
+  Globe,
 } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 
 import { NavMain } from '@/components/layout/nav-main';
 import { NavProjects } from '@/components/layout/nav-projects';
@@ -51,158 +39,163 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import Image from 'next/image';
-import Link from 'next/link';
-import { DarkModeToggle } from '../dark-mode-toggle';
-
-const navMainData = [
-  {
-    title: 'Admin',
-    url: '#',
-    icon: Activity,
-    isActive: true,
-    items: [
-      {
-        title: 'Profiles',
-        icon: GraduationCap,
-        url: '/profiles',
-      },
-      {
-        title: 'Roles',
-        icon: ListCheck,
-        url: '/roles',
-      },
-    ],
-  },
-  {
-    title: 'Contents',
-    url: '#',
-    icon: TableOfContents,
-    isActive: true,
-    items: [
-      {
-        title: 'Articles',
-        icon: StickyNote,
-        url: '/articles',
-      },
-      {
-        title: 'Posts',
-        icon: Twitter,
-        url: '/posts',
-      },
-      {
-        title: 'Categories',
-        icon: Tag,
-        url: '/categories',
-      },
-      {
-        title: 'Tags',
-        icon: Hash,
-        url: '/tags',
-      },
-      {
-        title: 'Glossaries',
-        icon: BookOpen,
-        url: '/glossaries',
-      },
-    ],
-  },
-  {
-    title: 'People & Types',
-    url: '#',
-    icon: FileUser,
-    isActive: true,
-    items: [
-      {
-        title: 'Individuals',
-        icon: FileUser,
-        url: '/individuals',
-      },
-      {
-        title: 'Types',
-        icon: Users,
-        url: '/types',
-      },
-    ],
-  },
-  {
-    title: 'Media',
-    url: '#',
-    icon: Folder,
-    isActive: true,
-    items: [
-      {
-        title: 'Audio Files',
-        icon: Music,
-        url: '/media/audio',
-      },
-      {
-        title: 'Images',
-        icon: ImageIcon,
-        url: '/media/images',
-      },
-      {
-        title: 'Videos',
-        icon: Video,
-        url: '/media/videos',
-      },
-      {
-        title: 'Documents',
-        icon: FileText,
-        url: '/media/documents',
-      },
-    ],
-  },
-];
-
-const navSecondaryData = [
-  {
-    title: 'Support',
-    url: '#',
-    icon: LifeBuoy,
-  },
-  {
-    title: 'Feedback',
-    url: '#',
-    icon: Send,
-  },
-];
-
-const projectsData = [
-  {
-    name: 'Emails',
-    url: '/emails',
-    icon: AtSign,
-  },
-];
+import { Link } from '@/i18n/navigation';
+import { LanguageSwitcher } from '../language-switcher';
+import { isRtlLocale, type Locale } from '@/i18n/config';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const t = useTranslations('sidebar');
+  const locale = useLocale();
+  const isRtl = isRtlLocale(locale as Locale);
+
+  const navMainData = [
+    {
+      title: t('admin'),
+      url: '#',
+      icon: Activity,
+      isActive: true,
+      items: [
+        {
+          title: t('profiles'),
+          icon: GraduationCap,
+          url: '/profiles',
+        },
+        {
+          title: t('roles'),
+          icon: ListCheck,
+          url: '/roles',
+        },
+      ],
+    },
+    {
+      title: t('contents'),
+      url: '#',
+      icon: TableOfContents,
+      isActive: true,
+      items: [
+        {
+          title: t('articles'),
+          icon: StickyNote,
+          url: '/articles',
+        },
+        {
+          title: t('posts'),
+          icon: Twitter,
+          url: '/posts',
+        },
+        {
+          title: t('categories'),
+          icon: Tag,
+          url: '/categories',
+        },
+        {
+          title: t('tags'),
+          icon: Hash,
+          url: '/tags',
+        },
+        {
+          title: t('glossaries'),
+          icon: BookOpen,
+          url: '/glossaries',
+        },
+      ],
+    },
+    {
+      title: t('peopleAndTypes'),
+      url: '#',
+      icon: FileUser,
+      isActive: true,
+      items: [
+        {
+          title: t('individuals'),
+          icon: FileUser,
+          url: '/individuals',
+        },
+        {
+          title: t('types'),
+          icon: Users,
+          url: '/types',
+        },
+      ],
+    },
+    {
+      title: t('media'),
+      url: '#',
+      icon: Folder,
+      isActive: true,
+      items: [
+        {
+          title: t('audioFiles'),
+          icon: Music,
+          url: '/media/audio',
+        },
+        {
+          title: t('images'),
+          icon: ImageIcon,
+          url: '/media/images',
+        },
+        {
+          title: t('videos'),
+          icon: Video,
+          url: '/media/videos',
+        },
+        {
+          title: t('documents'),
+          icon: FileText,
+          url: '/media/documents',
+        },
+      ],
+    },
+  ];
+
+  const navSecondaryData = [
+    {
+      title: t('support'),
+      url: '#',
+      icon: LifeBuoy,
+    },
+    {
+      title: t('feedback'),
+      url: '#',
+      icon: Send,
+    },
+  ];
+
+  const projectsData = [
+    {
+      name: t('emails'),
+      url: '/emails',
+      icon: AtSign,
+    },
+    {
+      name: t('languages'),
+      url: '/languages',
+      icon: Globe,
+    },
+  ];
+
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar variant="inset" side={isRtl ? 'right' : 'left'} {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg">
               <Link href="/" className="cursor-pointer">
                 <div className="bg-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  {/* <Image
-                    src="/images/symbol_white.svg"
-                    alt="Obs Admin"
-                    width={32}
-                    height={32}
-                    className="p-[2px]"
-                  /> */}
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-start text-sm leading-tight">
                   <span className="truncate font-semibold font-fira uppercase">
-                    Obs Admin
+                    {t('obsAdmin')}
                   </span>
-                  <span className="truncate text-xs">Centre de recherche</span>
+                  <span className="truncate text-xs">{t('researchCenter')}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <div className="flex justify-end px-2">
+          <LanguageSwitcher />
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainData} />

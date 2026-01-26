@@ -1,0 +1,127 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher",
+    "loading": "Chargement...",
+    "create": "Créer",
+    "add": "Ajouter",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "submit": "Soumettre",
+    "reset": "Réinitialiser",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "actions": "Actions",
+    "status": "Statut",
+    "name": "Nom",
+    "description": "Description",
+    "date": "Date",
+    "type": "Type",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "sidebar": {
+    "obsAdmin": "Obs Admin",
+    "researchCenter": "Centre de recherche",
+    "admin": "Admin",
+    "profiles": "Profils",
+    "roles": "Rôles",
+    "contents": "Contenus",
+    "articles": "Articles",
+    "posts": "Publications",
+    "categories": "Catégories",
+    "tags": "Tags",
+    "glossaries": "Glossaires",
+    "peopleAndTypes": "Personnes & Types",
+    "individuals": "Individus",
+    "types": "Types",
+    "media": "Médias",
+    "audioFiles": "Fichiers audio",
+    "images": "Images",
+    "videos": "Vidéos",
+    "documents": "Documents",
+    "emails": "E-mails",
+    "support": "Support",
+    "feedback": "Commentaires",
+    "languages": "Langues"
+  },
+  "breadcrumb": {
+    "home": "Accueil"
+  },
+  "auth": {
+    "login": "Se connecter",
+    "signup": "Créer un compte",
+    "resetPassword": "Nouveau mot de passe",
+    "email": "Email",
+    "password": "Mot de passe",
+    "emailPlaceholder": "a@example.com",
+    "passwordPlaceholder": "mot de passe",
+    "loginButton": "Se connecter",
+    "signupButton": "Créer un compte",
+    "resetPasswordButton": "Changer de mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "createAccount": "Créer un compte",
+    "existingAccount": "Compte existant ?",
+    "validation": {
+      "invalidEmail": "Adresse email invalide.",
+      "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères.",
+      "passwordLetter": "Le mot de passe doit contenir au moins une lettre.",
+      "passwordNumber": "Le mot de passe doit contenir au moins un chiffre.",
+      "passwordRequired": "Le mot de passe est requis sauf si vous réinitialisez le mot de passe."
+    }
+  },
+  "table": {
+    "rowsSelected": "{selected} sur {total} ligne(s) sélectionnée(s).",
+    "rowsPerPage": "Lignes par page",
+    "pageOf": "Page {current} sur {total}",
+    "goToFirstPage": "Aller à la première page",
+    "goToLastPage": "Aller à la dernière page",
+    "goToPreviousPage": "Aller à la page précédente",
+    "goToNextPage": "Aller à la page suivante",
+    "noResults": "Aucun résultat.",
+    "columns": "Colonnes",
+    "filter": "Filtrer",
+    "clearFilter": "Effacer le filtre",
+    "sortAsc": "Tri croissant",
+    "sortDesc": "Tri décroissant",
+    "hide": "Masquer"
+  },
+  "articles": {
+    "title": "Articles",
+    "newArticle": "Nouvel article",
+    "editArticle": "Modifier l'article",
+    "deleteArticle": "Supprimer l'article",
+    "articleTitle": "Titre de l'article",
+    "content": "Contenu",
+    "summary": "Résumé",
+    "published": "Publié",
+    "draft": "Brouillon"
+  },
+  "posts": {
+    "title": "Publications",
+    "newPost": "Nouvelle publication",
+    "editPost": "Modifier la publication",
+    "deletePost": "Supprimer la publication"
+  },
+  "profiles": {
+    "title": "Profils",
+    "newProfile": "Nouveau profil",
+    "editProfile": "Modifier le profil"
+  },
+  "media": {
+    "title": "Médias",
+    "upload": "Téléverser",
+    "download": "Télécharger",
+    "preview": "Aperçu"
+  },
+  "languages": {
+    "title": "Langues",
+    "arabic": "Arabe",
+    "english": "Anglais",
+    "french": "Français"
+  }
+}

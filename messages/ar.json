@@ -1,0 +1,127 @@
+{
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "search": "بحث",
+    "loading": "جاري التحميل...",
+    "create": "إنشاء",
+    "add": "إضافة",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "submit": "إرسال",
+    "reset": "إعادة تعيين",
+    "close": "إغلاق",
+    "confirm": "تأكيد",
+    "actions": "إجراءات",
+    "status": "الحالة",
+    "name": "الاسم",
+    "description": "الوصف",
+    "date": "التاريخ",
+    "type": "النوع",
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "sidebar": {
+    "obsAdmin": "إدارة المركز",
+    "researchCenter": "مركز البحوث",
+    "admin": "الإدارة",
+    "profiles": "الملفات الشخصية",
+    "roles": "الأدوار",
+    "contents": "المحتويات",
+    "articles": "المقالات",
+    "posts": "المنشورات",
+    "categories": "التصنيفات",
+    "tags": "الوسوم",
+    "glossaries": "المصطلحات",
+    "peopleAndTypes": "الأشخاص والأنواع",
+    "individuals": "الأفراد",
+    "types": "الأنواع",
+    "media": "الوسائط",
+    "audioFiles": "الملفات الصوتية",
+    "images": "الصور",
+    "videos": "الفيديوهات",
+    "documents": "المستندات",
+    "emails": "البريد الإلكتروني",
+    "support": "الدعم",
+    "feedback": "الملاحظات",
+    "languages": "اللغات"
+  },
+  "breadcrumb": {
+    "home": "الرئيسية"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "resetPassword": "كلمة مرور جديدة",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "emailPlaceholder": "a@example.com",
+    "passwordPlaceholder": "كلمة المرور",
+    "loginButton": "تسجيل الدخول",
+    "signupButton": "إنشاء حساب",
+    "resetPasswordButton": "تغيير كلمة المرور",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "createAccount": "إنشاء حساب",
+    "existingAccount": "لديك حساب؟",
+    "validation": {
+      "invalidEmail": "عنوان البريد الإلكتروني غير صالح.",
+      "passwordMinLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل.",
+      "passwordLetter": "يجب أن تحتوي كلمة المرور على حرف واحد على الأقل.",
+      "passwordNumber": "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل.",
+      "passwordRequired": "كلمة المرور مطلوبة إلا إذا كنت تريد إعادة تعيينها."
+    }
+  },
+  "table": {
+    "rowsSelected": "{selected} من {total} صف(ات) محددة.",
+    "rowsPerPage": "عدد الصفوف في الصفحة",
+    "pageOf": "الصفحة {current} من {total}",
+    "goToFirstPage": "الذهاب إلى الصفحة الأولى",
+    "goToLastPage": "الذهاب إلى الصفحة الأخيرة",
+    "goToPreviousPage": "الذهاب إلى الصفحة السابقة",
+    "goToNextPage": "الذهاب إلى الصفحة التالية",
+    "noResults": "لا توجد نتائج.",
+    "columns": "الأعمدة",
+    "filter": "تصفية",
+    "clearFilter": "مسح التصفية",
+    "sortAsc": "ترتيب تصاعدي",
+    "sortDesc": "ترتيب تنازلي",
+    "hide": "إخفاء"
+  },
+  "articles": {
+    "title": "المقالات",
+    "newArticle": "مقال جديد",
+    "editArticle": "تعديل المقال",
+    "deleteArticle": "حذف المقال",
+    "articleTitle": "عنوان المقال",
+    "content": "المحتوى",
+    "summary": "الملخص",
+    "published": "منشور",
+    "draft": "مسودة"
+  },
+  "posts": {
+    "title": "المنشورات",
+    "newPost": "منشور جديد",
+    "editPost": "تعديل المنشور",
+    "deletePost": "حذف المنشور"
+  },
+  "profiles": {
+    "title": "الملفات الشخصية",
+    "newProfile": "ملف شخصي جديد",
+    "editProfile": "تعديل الملف الشخصي"
+  },
+  "media": {
+    "title": "الوسائط",
+    "upload": "رفع",
+    "download": "تحميل",
+    "preview": "معاينة"
+  },
+  "languages": {
+    "title": "اللغات",
+    "arabic": "العربية",
+    "english": "الإنجليزية",
+    "french": "الفرنسية"
+  }
+}

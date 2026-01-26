@@ -527,7 +527,7 @@ export default function Editor({
                   editor.chain().focus().toggleBlockquote().run();
                 }}
               >
-                <Quote className="mr-2 h-4 w-4" />
+                <Quote className="h-4 w-4" />
                 <span>Regular Quote</span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -549,7 +549,7 @@ export default function Editor({
                   editor.commands.focus();
                 }}
               >
-                <Quote className="mr-2 h-4 w-4" />
+                <Quote className="h-4 w-4" />
                 <span>Quote + Source</span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -572,7 +572,7 @@ export default function Editor({
                   editor.commands.focus();
                 }}
               >
-                <span className="mr-2 h-4 w-4 font-bold flex items-center justify-center">Q</span>
+                <span className="h-4 w-4 font-bold flex items-center justify-center">Q</span>
                 <span>Quote + Translation</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -622,7 +622,7 @@ export default function Editor({
                   .run()
               }
             >
-              <TableIcon className="mr-2 h-4 w-4" />
+              <TableIcon className="h-4 w-4" />
               <span>Insert Table</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -631,21 +631,21 @@ export default function Editor({
               onClick={() => editor.chain().focus().addColumnBefore().run()}
               disabled={!editor.can().addColumnBefore()}
             >
-              <Columns className="mr-2 h-4 w-4" />
+              <Columns className="h-4 w-4" />
               <span>Add Column Before</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => editor.chain().focus().addColumnAfter().run()}
               disabled={!editor.can().addColumnAfter()}
             >
-              <Columns className="mr-2 h-4 w-4 rotate-180" />
+              <Columns className="h-4 w-4 rotate-180" />
               <span>Add Column After</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => editor.chain().focus().deleteColumn().run()}
               disabled={!editor.can().deleteColumn()}
             >
-              <Trash2 className="mr-2 h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
               <span>Delete Column</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -654,21 +654,21 @@ export default function Editor({
               onClick={() => editor.chain().focus().addRowBefore().run()}
               disabled={!editor.can().addRowBefore()}
             >
-              <Rows className="mr-2 h-4 w-4" />
+              <Rows className="h-4 w-4" />
               <span>Add Row Before</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => editor.chain().focus().addRowAfter().run()}
               disabled={!editor.can().addRowAfter()}
             >
-              <Rows className="mr-2 h-4 w-4 rotate-180" />
+              <Rows className="h-4 w-4 rotate-180" />
               <span>Add Row After</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => editor.chain().focus().deleteRow().run()}
               disabled={!editor.can().deleteRow()}
             >
-              <Trash2 className="mr-2 h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
               <span>Delete Row</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -677,14 +677,14 @@ export default function Editor({
               onClick={() => editor.chain().focus().mergeCells().run()}
               disabled={!editor.can().mergeCells()}
             >
-              <Merge className="mr-2 h-4 w-4" />
+              <Merge className="h-4 w-4" />
               <span>Merge Cells</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => editor.chain().focus().splitCell().run()}
               disabled={!editor.can().splitCell()}
             >
-              <Split className="mr-2 h-4 w-4" />
+              <Split className="h-4 w-4" />
               <span>Split Cell</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -693,7 +693,7 @@ export default function Editor({
               disabled={!editor.can().deleteTable()}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
               <span>Delete Table</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -718,7 +718,7 @@ export default function Editor({
                   size="sm"
                   className="bg-transparent border-input"
                 >
-                  <ImagePlus className="h-4 w-4 mr-2" />
+                  <ImagePlus className="h-4 w-4" />
                   Image (Cloud)
                 </Button>
               );
@@ -736,7 +736,7 @@ export default function Editor({
               setIsMediaLibraryOpen(true);
             }}
           >
-            <Music className="h-4 w-4 mr-2" />
+            <Music className="h-4 w-4" />
             Media
           </Button>
         </ButtonGroup>
@@ -766,7 +766,7 @@ export default function Editor({
                 className="bg-transparent border-input"
                 title="Post"
               >
-                <Twitter className="h-4 w-4 mr-2" />
+                <Twitter className="h-4 w-4" />
                 Post
               </Button>
             }
@@ -784,7 +784,7 @@ export default function Editor({
             }}
             title="Add Glossary Term"
           >
-            <BookOpen className="h-4 w-4 mr-2" />
+            <BookOpen className="h-4 w-4" />
             Glossary
           </Button>
         </ButtonGroup>

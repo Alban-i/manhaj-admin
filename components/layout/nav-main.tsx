@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronRight, type LucideIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
   Collapsible,
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/sidebar';
 
 import { useSelectedLayoutSegments } from 'next/navigation';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 
 export function NavMain({
   items,
@@ -40,10 +41,11 @@ export function NavMain({
   const segments = useSelectedLayoutSegments();
   const lastSegment = segments[segments.length - 1];
   const getLastPath = (url: string) => url.split('/').filter(Boolean).pop();
+  const t = useTranslations('sidebar');
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Content</SidebarGroupLabel>
+      <SidebarGroupLabel>{t('contents')}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
@@ -57,8 +59,8 @@ export function NavMain({
               {item.items?.length ? (
                 <>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuAction className="data-[state=open]:rotate-90">
-                      <ChevronRight />
+                    <SidebarMenuAction className="data-[state=open]:rotate-90 rtl:data-[state=open]:-rotate-90">
+                      <ChevronRight className="rtl:rotate-180" />
                       <span className="sr-only">Toggle</span>
                     </SidebarMenuAction>
                   </CollapsibleTrigger>

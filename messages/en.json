@@ -1,0 +1,127 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "loading": "Loading...",
+    "create": "Create",
+    "add": "Add",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset",
+    "close": "Close",
+    "confirm": "Confirm",
+    "actions": "Actions",
+    "status": "Status",
+    "name": "Name",
+    "description": "Description",
+    "date": "Date",
+    "type": "Type",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "sidebar": {
+    "obsAdmin": "Obs Admin",
+    "researchCenter": "Research Center",
+    "admin": "Admin",
+    "profiles": "Profiles",
+    "roles": "Roles",
+    "contents": "Contents",
+    "articles": "Articles",
+    "posts": "Posts",
+    "categories": "Categories",
+    "tags": "Tags",
+    "glossaries": "Glossaries",
+    "peopleAndTypes": "People & Types",
+    "individuals": "Individuals",
+    "types": "Types",
+    "media": "Media",
+    "audioFiles": "Audio Files",
+    "images": "Images",
+    "videos": "Videos",
+    "documents": "Documents",
+    "emails": "Emails",
+    "support": "Support",
+    "feedback": "Feedback",
+    "languages": "Languages"
+  },
+  "breadcrumb": {
+    "home": "Home"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Create Account",
+    "resetPassword": "New Password",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "a@example.com",
+    "passwordPlaceholder": "password",
+    "loginButton": "Login",
+    "signupButton": "Create Account",
+    "resetPasswordButton": "Change Password",
+    "forgotPassword": "Forgot password?",
+    "createAccount": "Create an account",
+    "existingAccount": "Have an account?",
+    "validation": {
+      "invalidEmail": "Invalid email address.",
+      "passwordMinLength": "Password must be at least 8 characters.",
+      "passwordLetter": "Password must contain at least one letter.",
+      "passwordNumber": "Password must contain at least one number.",
+      "passwordRequired": "Password is required unless you are resetting it."
+    }
+  },
+  "table": {
+    "rowsSelected": "{selected} of {total} row(s) selected.",
+    "rowsPerPage": "Rows per page",
+    "pageOf": "Page {current} of {total}",
+    "goToFirstPage": "Go to first page",
+    "goToLastPage": "Go to last page",
+    "goToPreviousPage": "Go to previous page",
+    "goToNextPage": "Go to next page",
+    "noResults": "No results.",
+    "columns": "Columns",
+    "filter": "Filter",
+    "clearFilter": "Clear filter",
+    "sortAsc": "Sort ascending",
+    "sortDesc": "Sort descending",
+    "hide": "Hide"
+  },
+  "articles": {
+    "title": "Articles",
+    "newArticle": "New Article",
+    "editArticle": "Edit Article",
+    "deleteArticle": "Delete Article",
+    "articleTitle": "Article Title",
+    "content": "Content",
+    "summary": "Summary",
+    "published": "Published",
+    "draft": "Draft"
+  },
+  "posts": {
+    "title": "Posts",
+    "newPost": "New Post",
+    "editPost": "Edit Post",
+    "deletePost": "Delete Post"
+  },
+  "profiles": {
+    "title": "Profiles",
+    "newProfile": "New Profile",
+    "editProfile": "Edit Profile"
+  },
+  "media": {
+    "title": "Media",
+    "upload": "Upload",
+    "download": "Download",
+    "preview": "Preview"
+  },
+  "languages": {
+    "title": "Languages",
+    "arabic": "Arabic",
+    "english": "English",
+    "french": "French"
+  }
+}

@@ -1,6 +1,8 @@
 import OrderedList from '@tiptap/extension-ordered-list';
 import { Editor } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react';
 import { FootnoteV2Rules } from './footnote-v2-rules-new';
+import { FootnotesV2NodeView } from './footnotes-v2-node-view';
 
 export const FootnotesV2Extension = OrderedList.extend({
   name: 'footnotesV2',
@@ -66,5 +68,9 @@ export const FootnotesV2Extension = OrderedList.extend({
 
   addExtensions() {
     return [FootnoteV2Rules];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(FootnotesV2NodeView);
   },
 });
