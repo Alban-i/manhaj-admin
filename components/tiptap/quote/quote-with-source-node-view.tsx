@@ -67,7 +67,7 @@ const QuoteWithSourceNodeView = ({ node, updateAttributes }: NodeViewProps) => {
   return (
     <NodeViewWrapper
       onDragStart={cancelIfNotHandle}
-      className="relative group bg-muted text-foreground border-l-primary rounded border-l-4 shadow-sm p-0"
+      className="relative my-6 group bg-muted text-foreground border-l-primary rounded border-l-4 shadow-sm p-0"
     >
       {/* DRAG HANDLE */}
       <span

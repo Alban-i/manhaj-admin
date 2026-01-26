@@ -22,6 +22,7 @@ import {
   Video,
   FileText,
   Globe,
+  History,
 } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 
@@ -97,6 +98,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: t('glossaries'),
           icon: BookOpen,
           url: '/glossaries',
+        },
+        {
+          title: t('timelines'),
+          icon: History,
+          url: '/timelines',
         },
       ],
     },

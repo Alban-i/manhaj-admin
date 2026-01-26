@@ -45,8 +45,17 @@ import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2, Globe, Plus, Star, Link2 } from 'lucide-react';
+import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import DatePicker, { DateObject } from 'react-multi-date-picker';
+import arabic from 'react-date-object/calendars/arabic';
+import arabic_ar from 'react-date-object/locales/arabic_ar';
+import gregorian from 'react-date-object/calendars/gregorian';
+import gregorian_en from 'react-date-object/locales/gregorian_en';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { UsedMediaCard } from '@/components/media/used-media-card';
 import { revalidateArticle, revalidateArticles } from '@/actions/revalidate';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +76,9 @@ const initialData = {
   language: 'ar',
   translation_group_id: null,
   is_original: true,
+  event_date_hijri: null,
+  event_date_hijri_year: null,
+  event_date_gregorian: null,
 } as const;
 
 const formSchema = z.object({
@@ -79,6 +91,9 @@ const formSchema = z.object({
   is_original: z.boolean(),
   image_url: z.string().optional(),
   language: z.string().min(1, 'Language is required'),
+  event_date_hijri: z.string().optional(),
+  event_date_hijri_year: z.coerce.number().optional(),
+  event_date_gregorian: z.string().optional(),
 });
 
 interface ArticleFormProps {
@@ -128,6 +143,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       is_original: defaultValues.is_original ?? true,
       image_url: defaultValues.image_url ?? '',
       language: defaultValues.language ?? 'ar',
+      event_date_hijri: defaultValues.event_date_hijri ?? '',
+      event_date_hijri_year: defaultValues.event_date_hijri_year ?? undefined,
+      event_date_gregorian: defaultValues.event_date_gregorian ?? '',
     },
   });
 
@@ -230,6 +248,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         category_id: values.category_id ? Number(values.category_id) : null,
         author_id: values.author_id || null,
         image_url: values.image_url || null,
+        // Event date fields for timeline support
+        event_date_hijri: values.event_date_hijri || null,
+        event_date_hijri_year: values.event_date_hijri_year || null,
+        event_date_gregorian: values.event_date_gregorian || null,
         ...(defaultValues.id && { id: defaultValues.id }),
       };
 
@@ -293,6 +315,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         is_original: data.is_original ?? true,
         image_url: values.image_url ?? '',
         language: data.language ?? 'ar',
+        event_date_hijri: data.event_date_hijri ?? '',
+        event_date_hijri_year: data.event_date_hijri_year ?? undefined,
+        event_date_gregorian: data.event_date_gregorian ?? '',
       });
 
       toast.success(toastMessage);
@@ -390,7 +415,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <fieldset
             disabled={loading}
-            className="grid md:grid-cols-[2fr_1fr] gap-4"
+            className="grid @lg:grid-cols-[2fr_1fr] gap-4"
           >
             {/* Left Column */}
             <div className="space-y-4">
@@ -407,110 +432,6 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     <Button type="submit">{action}</Button>
                   </div>
                 </CardHeader>
-              </Card>
-
-              {/* DETAILS */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Article Details</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-x-2 gap-y-4">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Article Title" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="slug"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Slug</FormLabel>
-                        <FormControl>
-                          <Input placeholder="article-slug" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="">
-                    <FormLabel className="mb-2">Status</FormLabel>
-                    <TabToggle
-                      state={status}
-                      setState={(value) => setStatus(value as FormStatus)}
-                      picklist={[
-                        { value: 'draft', label: 'Draft' },
-                        { value: 'published', label: 'Published' },
-                        { value: 'archived', label: 'Archived' },
-                      ]}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="language"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
-                          Language
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl className="w-full">
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a language" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {languages.map((lang) => (
-                              <SelectItem key={lang.code} value={lang.code}>
-                                <span className="flex items-center gap-2">
-                                  <Globe className="h-4 w-4" />
-                                  {lang.native_name}
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="is_featured"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-2 space-y-0 border rounded-md p-2">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Feature this article</FormLabel>
-                          <FormDescription>
-                            The featured article will be displayed on home page
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-                </CardContent>
               </Card>
 
               {/* SUMMARY */}
@@ -555,6 +476,133 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   />
                 </CardContent>
               </Card>
+
+              {/* EVENT DATE - For Timeline Support */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CalendarIcon className="h-5 w-5" />
+                    Event Date
+                  </CardTitle>
+                  <CardDescription>
+                    Historical date for timeline display (optional)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-x-2 gap-y-4">
+                  {/* Hijri Date Picker */}
+                  <FormField
+                    control={form.control}
+                    name="event_date_hijri"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hijri Date</FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            calendar={arabic}
+                            locale={arabic_ar}
+                            value={field.value ? new DateObject({
+                              date: field.value,
+                              calendar: arabic,
+                              locale: arabic_ar,
+                              format: 'D MMMM YYYY'
+                            }) : undefined}
+                            onChange={(date: DateObject | null) => {
+                              if (date) {
+                                // Format as "12 Rabi al-Awwal 1 AH"
+                                const formatted = `${date.day} ${date.month.name} ${date.year} AH`;
+                                field.onChange(formatted);
+                                // Also set the hijri year for sorting
+                                form.setValue('event_date_hijri_year', date.year);
+
+                                // Convert to Gregorian and sync
+                                const gregorianDate = new DateObject(date).convert(gregorian, gregorian_en);
+                                form.setValue('event_date_gregorian', gregorianDate.format('YYYY-MM-DD'));
+                              } else {
+                                field.onChange('');
+                                form.setValue('event_date_hijri_year', undefined);
+                                form.setValue('event_date_gregorian', '');
+                              }
+                            }}
+                            format="D MMMM YYYY"
+                            placeholder="Select Hijri date"
+                            containerClassName="w-full"
+                            inputClass="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Islamic calendar date
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Gregorian Date Picker */}
+                  <FormField
+                    control={form.control}
+                    name="event_date_gregorian"
+                    render={({ field }) => {
+                      const date = field.value ? new Date(field.value) : undefined;
+                      return (
+                        <FormItem>
+                          <FormLabel>Gregorian Date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    'w-full justify-start text-left font-normal',
+                                    !date && 'text-muted-foreground'
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {date ? format(date, 'PPP') : 'Select date'}
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={(selectedDate) => {
+                                  if (selectedDate) {
+                                    // Format as YYYY-MM-DD for database
+                                    field.onChange(format(selectedDate, 'yyyy-MM-dd'));
+
+                                    // Convert to Hijri and sync
+                                    const hijriDate = new DateObject(selectedDate).convert(arabic, arabic_ar);
+                                    const hijriFormatted = `${hijriDate.day} ${hijriDate.month.name} ${hijriDate.year} AH`;
+                                    form.setValue('event_date_hijri', hijriFormatted);
+                                    form.setValue('event_date_hijri_year', hijriDate.year);
+                                  } else {
+                                    field.onChange('');
+                                    form.setValue('event_date_hijri', '');
+                                    form.setValue('event_date_hijri_year', undefined);
+                                  }
+                                }}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormDescription>
+                            Western calendar date
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* USED MEDIA */}
+              <UsedMediaCard
+                articleId={defaultValues.id}
+                onMediaRemoved={() => {
+                  // Refresh can be added here if needed
+                }}
+              />
             </div>
 
             {/* Right Column */}
@@ -683,19 +731,11 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   />
                 </CardContent>
               </Card>
-
-              {/* USED MEDIA */}
-              <UsedMediaCard
-                articleId={defaultValues.id}
-                onMediaRemoved={() => {
-                  // Refresh can be added here if needed
-                }}
-              />
             </div>
 
             {/* TRANSLATIONS - Full Width */}
             {defaultValues.id && (
-              <Card className="md:col-span-2">
+              <Card className="@lg:col-span-2">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="h-5 w-5" />
@@ -703,7 +743,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-[1fr_auto] gap-4 items-start">
+                  <div className="grid @md:grid-cols-[1fr_auto] gap-4 items-start">
                     {/* Left column - Translations */}
                     <div className="space-y-4">
                       {/* Existing translations */}
@@ -800,8 +840,119 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
               </Card>
             )}
 
+            {/* ARTICLE DETAILS - Full Width */}
+            <Card className="@lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Article Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Title - Full Width & Prominent */}
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-lg font-semibold">Title</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Article Title"
+                          className="text-2xl @md:text-3xl font-bold h-14 @md:h-16"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Other Details - Grid */}
+                <div className="grid @sm:grid-cols-2 @lg:grid-cols-4 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Slug</FormLabel>
+                        <FormControl>
+                          <Input placeholder="article-slug" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div>
+                    <FormLabel className="mb-2">Status</FormLabel>
+                    <TabToggle
+                      state={status}
+                      setState={(value) => setStatus(value as FormStatus)}
+                      picklist={[
+                        { value: 'draft', label: 'Draft' },
+                        { value: 'published', label: 'Published' },
+                        { value: 'archived', label: 'Archived' },
+                      ]}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="language"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
+                          Language
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl className="w-full">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a language" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {languages.map((lang) => (
+                              <SelectItem key={lang.code} value={lang.code}>
+                                <span className="flex items-center gap-2">
+                                  <Globe className="h-4 w-4" />
+                                  {lang.native_name}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="is_featured"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2 space-y-0 border rounded-md p-2 h-fit self-end">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Feature this article</FormLabel>
+                          <FormDescription>
+                            Displayed on home page
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Full Width Content Card */}
-            <Card className="md:col-span-2">
+            <Card className="@lg:col-span-2">
               <CardHeader>
                 <CardTitle>Content</CardTitle>
               </CardHeader>

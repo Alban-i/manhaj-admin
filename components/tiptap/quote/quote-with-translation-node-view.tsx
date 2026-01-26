@@ -53,7 +53,7 @@ const QuoteWithTranslationNodeView = ({
   // Drag logic (optional, can be added if needed)
 
   return (
-    <NodeViewWrapper className="relative group text-foreground border-l-primary rounded border-l-4 shadow-sm p-0 text-center">
+    <NodeViewWrapper className="relative my-6 group text-foreground border-l-primary rounded border-l-4 shadow-sm p-0 text-center">
       {/* CONTROL BAR */}
       <div
         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-2"

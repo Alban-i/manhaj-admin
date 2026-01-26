@@ -47,3 +47,9 @@ export type Classification =
 export type Type = Database['public']['Tables']['types']['Row'] & {
   classification: Classification;
 };
+
+export type Timeline = Database['public']['Tables']['timelines']['Row'];
+
+export type TimelineArticle = Database['public']['Tables']['timeline_articles']['Row'];
+
+export type EventDatePrecision = 'day' | 'month' | 'year' | 'decade' | 'century';

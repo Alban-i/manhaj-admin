@@ -203,3 +203,78 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* React Multi Date Picker - Override default blue theme */
+.rmdp-wrapper {
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+}
+
+.rmdp-container {
+  width: 100%;
+}
+
+.rmdp-calendar {
+  background-color: var(--popover) !important;
+}
+
+.rmdp-day.rmdp-selected span:not(.highlight) {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  box-shadow: none !important;
+}
+
+.rmdp-day.rmdp-today span {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) span:hover {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.rmdp-header-values,
+.rmdp-week-day,
+.rmdp-day span {
+  color: var(--foreground) !important;
+}
+
+.rmdp-arrow {
+  border-color: var(--foreground) !important;
+}
+
+.rmdp-arrow-container:hover {
+  background-color: var(--accent) !important;
+}
+
+.rmdp-shadow {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.rmdp-panel-body li {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.rmdp-panel-body li.bg-blue {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.rmdp-month-picker,
+.rmdp-year-picker {
+  background-color: var(--popover) !important;
+}
+
+.rmdp-month-picker .rmdp-day span:hover,
+.rmdp-year-picker .rmdp-day span:hover {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.rmdp-month-picker .rmdp-day.rmdp-selected span,
+.rmdp-year-picker .rmdp-day.rmdp-selected span {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}

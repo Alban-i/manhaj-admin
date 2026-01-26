@@ -132,7 +132,7 @@ const ImageNodeView = ({
   return (
     <NodeViewWrapper
       as="figure"
-      className="relative"
+      className="relative my-6"
       data-alignment={node.attrs.alignment || 'center'}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

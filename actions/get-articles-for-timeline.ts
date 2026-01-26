@@ -1,0 +1,39 @@
+import { createClient } from '@/providers/supabase/server';
+
+export interface ArticleForTimeline {
+  id: string;
+  title: string;
+  slug: string;
+  event_date_hijri: string | null;
+  event_date_hijri_year: number | null;
+  event_date_gregorian: string | null;
+  event_date_precision: string | null;
+  language: string;
+  status: string;
+}
+
+const getArticlesForTimeline = async (): Promise<ArticleForTimeline[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('articles')
+    .select(`
+      id,
+      title,
+      slug,
+      event_date_hijri,
+      event_date_hijri_year,
+      event_date_gregorian,
+      event_date_precision,
+      language,
+      status
+    `)
+    .order('title', { ascending: true });
+
+  if (error) {
+    console.log(error);
+    return [];
+  }
+  return data || [];
+};
+
+export default getArticlesForTimeline;

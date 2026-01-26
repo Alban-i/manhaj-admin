@@ -39,7 +39,7 @@ const AudioNodeView = ({
   };
 
   return (
-    <NodeViewWrapper className="relative">
+    <NodeViewWrapper className="relative my-6">
       <div
         draggable={true}
         onDragStart={(e: React.DragEvent) => {

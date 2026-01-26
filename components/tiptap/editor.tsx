@@ -23,7 +23,6 @@ import {
   BookOpen,
   Code,
   Columns,
-  Heading1,
   Heading2,
   Heading3,
   ImagePlus,
@@ -422,17 +421,6 @@ export default function Editor({
 
         {/* GROUP 2: Headings */}
         <ButtonGroup>
-          <Toggle
-            pressed={editor.isActive('heading', { level: 1 })}
-            onPressedChange={() =>
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            }
-            size="sm"
-            variant="outline"
-            title="Heading 1"
-          >
-            <Heading1 className="h-4 w-4" />
-          </Toggle>
           <Toggle
             pressed={editor.isActive('heading', { level: 2 })}
             onPressedChange={() =>
