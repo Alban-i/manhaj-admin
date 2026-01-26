@@ -96,6 +96,13 @@ export default function Editor({
   articleId,
   onMediaAdded,
 }: EditorProps) {
+  // === DEBUG: Track editor instance identity and render cycles ===
+  const editorIdRef = useRef(Math.random().toString(36).slice(2, 8));
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+
+  console.log(`🔷 RENDER #${renderCountRef.current} | Editor ID: ${editorIdRef.current} | content prop: "${content?.slice(0, 80) || '(empty)'}..."`);
+  // === END DEBUG ===
 
   const [isMounted, setIsMounted] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -105,11 +112,15 @@ export default function Editor({
   const [showRawHtml, setShowRawHtml] = useState(false);
   const savedCursorPositionRef = useRef<number | null>(null);
   const lastContentRef = useRef<string>(content);
+  const isInitializedRef = useRef(false);
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         document: false,
+        // Explicitly disable link from StarterKit to prevent duplicate extension warning
+        // We use our own Link configuration below
+        link: false,
       }),
       Document.extend({
         content: 'block+ footnotesV2?',
@@ -154,14 +165,51 @@ export default function Editor({
     ],
     content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
+    onCreate: ({ editor }) => {
+      console.log(`🟢 onCreate | Editor ID: ${editorIdRef.current} | HTML: ${editor.getHTML()}`);
+      // Mark as initialized after a microtask to allow the editor to fully stabilize
+      // This prevents spurious onUpdate calls during React StrictMode double-mount
+      queueMicrotask(() => {
+        isInitializedRef.current = true;
+        console.log(`🟢 Editor initialized | Editor ID: ${editorIdRef.current}`);
+      });
+    },
     onUpdate: ({ editor }) => {
       const newContent = editor.getHTML();
+      console.log(`🟡 onUpdate | Editor ID: ${editorIdRef.current} | initialized: ${isInitializedRef.current} | HTML: ${newContent}`);
+
+      // Ignore spurious updates during initialization (React StrictMode double-mount issue)
+      // If unexpected content appears before initialization, reset to the original content
+      if (!isInitializedRef.current) {
+        // lastContentRef holds the expected initial content
+        const expectedContent = lastContentRef.current || '<p></p>';
+        if (newContent !== expectedContent && newContent !== '<p></p>') {
+          console.log(`🟡 onUpdate | SPURIOUS UPDATE DETECTED - resetting to: "${expectedContent.slice(0, 50)}..."`);
+          // Reset to expected content on next tick to avoid infinite loop
+          queueMicrotask(() => {
+            editor.commands.setContent(expectedContent);
+          });
+        }
+        console.log(`🟡 onUpdate | IGNORED - editor not yet initialized`);
+        return;
+      }
+
       // Only notify parent if content structure actually changed
       // This prevents unnecessary re-renders from NodeView internal state updates
       if (lastContentRef.current !== newContent) {
+        console.log(`🟡 onUpdate | Content CHANGED from: "${lastContentRef.current?.slice(0, 80)}..." to: "${newContent.slice(0, 80)}..."`);
         lastContentRef.current = newContent;
         const json = editor.getJSON();
         onChange?.(newContent, json);
+      } else {
+        console.log(`🟡 onUpdate | Content UNCHANGED (no onChange triggered)`);
+      }
+    },
+    onTransaction: ({ transaction }) => {
+      // Log ALL transactions, not just docChanged ones
+      console.log(`🔵 onTransaction | Editor ID: ${editorIdRef.current} | docChanged: ${transaction.docChanged} | steps: ${transaction.steps.length} | selectionSet: ${transaction.selectionSet} | storedMarksSet: ${transaction.storedMarksSet}`);
+      if (transaction.docChanged) {
+        console.log('🔵 onTransaction | Steps:', transaction.steps.map(s => s.toJSON()));
       }
     },
     editorProps: {
@@ -241,6 +289,26 @@ export default function Editor({
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // === DEBUG: Track mount/unmount cycles ===
+  useEffect(() => {
+    console.log(`🟩 MOUNT | Editor ID: ${editorIdRef.current} | content prop at mount: "${content?.slice(0, 80) || '(empty)'}..."`);
+    return () => {
+      console.log(`🟥 UNMOUNT | Editor ID: ${editorIdRef.current}`);
+    };
+  }, []);
+
+  // === DEBUG: Track content prop changes ===
+  const prevContentRef = useRef(content);
+  useEffect(() => {
+    if (prevContentRef.current !== content) {
+      console.log(`🟠 CONTENT PROP CHANGED | Editor ID: ${editorIdRef.current}`);
+      console.log(`   From: "${prevContentRef.current?.slice(0, 80) || '(empty)'}..."`);
+      console.log(`   To:   "${content?.slice(0, 80) || '(empty)'}..."`);
+      prevContentRef.current = content;
+    }
+  }, [content]);
+  // === END DEBUG ===
 
 
   const onImageUpload = useCallback(
@@ -512,6 +580,7 @@ export default function Editor({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => {
+                  console.trace('🟠 DEBUG: Regular Quote menu item clicked!');
                   editor.chain().focus().toggleBlockquote().run();
                 }}
               >
@@ -520,6 +589,7 @@ export default function Editor({
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
+                  console.trace('🟣 DEBUG: Quote + Source menu item clicked!');
                   if (!editor) return;
                   editor
                     .chain()
@@ -542,6 +612,7 @@ export default function Editor({
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
+                  console.trace('🔴 DEBUG: Quote + Translation menu item clicked!');
                   if (!editor) return;
                   editor
                     .chain()

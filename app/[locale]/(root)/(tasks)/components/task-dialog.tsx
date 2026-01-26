@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, PlusCircle } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 
 import {
   Form,
@@ -33,13 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/providers/supabase/client';
@@ -229,37 +222,15 @@ export default function TaskDialog({
                 render={({ field }) => (
                   <FormItem className="flex-1">
                     <FormLabel>Due Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              'w-full pl-3 text-left font-normal',
-                              !field.value && 'text-muted-foreground'
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? (
-                              format(field.value, 'PPP')
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date(new Date().setHours(0, 0, 0, 0))
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        disabled={loading}
+                        value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                        min={format(new Date(), 'yyyy-MM-dd')}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

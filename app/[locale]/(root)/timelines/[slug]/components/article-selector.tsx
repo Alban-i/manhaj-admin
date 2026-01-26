@@ -35,6 +35,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatHijriForDisplay } from '@/lib/hijri-utils';
 
 interface ArticleSelectorProps {
   timelineId: string;
@@ -151,7 +152,7 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
     if (!hijri && !gregorian) return null;
 
     const parts = [];
-    if (hijri) parts.push(hijri);
+    if (hijri) parts.push(formatHijriForDisplay(hijri));
     if (gregorian) {
       const date = new Date(gregorian);
       parts.push(date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
@@ -193,7 +194,7 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
                     {article.event_date_hijri && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {article.event_date_hijri}
+                        {formatHijriForDisplay(article.event_date_hijri)}
                         {article.event_date_gregorian && (
                           <> / {article.event_date_gregorian}</>
                         )}
