@@ -81,6 +81,7 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
     <div className="flex justify-center">
       <div className="p-4 bg-card rounded-md relative max-w-lg w-full">
         <Button
+          type="button"
           size="default"
           onClick={cycleSpeed}
           className="absolute top-2 right-2 text-xs px-2 py-1 h-8 w-12"
@@ -104,10 +105,11 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
             </div>
           )}
           <div className="flex justify-center items-center gap-2">
-            <Button size="lg" onClick={() => skip(-10)} title="« 10s">
+            <Button type="button" size="lg" onClick={() => skip(-10)} title="« 10s">
               <RiReplay10Line className="text-2xl" />
             </Button>
             <Button
+              type="button"
               size="lg"
               onClick={togglePlay}
               title={playing ? 'Pause' : 'Play'}
@@ -118,7 +120,7 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
                 <Play className="w-6 h-6" />
               )}
             </Button>
-            <Button size="lg" onClick={() => skip(10)} title="10s »">
+            <Button type="button" size="lg" onClick={() => skip(10)} title="10s »">
               <RiForward10Line />
             </Button>
           </div>

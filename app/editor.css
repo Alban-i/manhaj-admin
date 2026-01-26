@@ -1,3 +1,7 @@
+.ProseMirror {
+  line-height: 1.8;
+}
+
 .ProseMirror h1 {
   font-size: 2rem;
   font-weight: 700;
@@ -6,6 +10,7 @@
 .ProseMirror h2 {
   font-size: 1.5rem;
   font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 .ProseMirror h3 {
@@ -16,6 +21,7 @@
 .ProseMirror p {
   /* font-size: 1rem; */
   font-weight: 400;
+  text-align: justify;
 }
 
 /* Glossary Term Styling */
@@ -38,20 +44,20 @@
   /* font-size: 1rem; */
   font-weight: 400;
   list-style-type: disc;
-  margin-left: 1.5em;
+  margin-inline-start: 1.5em;
 }
 
 .ProseMirror ul ul {
-  margin-left: 1.5em;
+  margin-inline-start: 1.5em;
 }
 
 .ProseMirror ol {
   list-style-type: decimal;
-  margin-left: 1.5em;
+  margin-inline-start: 1.5em;
 }
 
 .ProseMirror ol ol {
-  margin-left: 1.5em;
+  margin-inline-start: 1.5em;
 }
 
 .ProseMirror ol {
@@ -73,7 +79,7 @@
 .ProseMirror th,
 .ProseMirror td {
   padding: 0.75rem;
-  text-align: left;
+  text-align: start;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -115,23 +121,23 @@
 
 /* Blockquote styling */
 .ProseMirror blockquote {
-  border-left-width: 4px;
-  /* border-left-color: var(--color-border); */
+  border-inline-start-width: 4px;
+  border-inline-start-color: var(--color-border);
   margin-top: 1rem; /* my-4 */
   margin-bottom: 1rem; /* my-4 */
-  padding-top: 0.5rem; /* py-2 */
-  padding-bottom: 0.5rem; /* py-2 */
-  padding-left: 1rem; /* px-4 */
-  padding-right: 1rem; /* px-4 */
+  padding-top: 1rem; /* py-4 */
+  padding-bottom: 1rem; /* py-4 */
+  padding-inline-start: 1rem; /* px-4 */
+  padding-inline-end: 1rem; /* px-4 */
   /* font-style: italic; */
   color: var(--color-muted-foreground);
-  background-color: var(--color-card);
+  /* background-color: var(--color-card); */
 }
 
 .dark .ProseMirror blockquote {
-  border-color: var(--color-border);
+  border-inline-start-color: var(--color-border);
   color: var(--color-muted-foreground);
-  background-color: var(--color-card);
+  /* background-color: var(--color-card); */
 }
 
 /* Column layout styling */
@@ -145,14 +151,14 @@
 }
 
 .ProseMirror [data-type='column'] {
-  border-left-width: 2px;
-  border-left-color: var(--color-border);
-  padding-left: 1rem; /* pl-4 */
+  border-inline-start-width: 2px;
+  border-inline-start-color: var(--color-border);
+  padding-inline-start: 1rem; /* pl-4 */
 }
 
 .ProseMirror [data-type='column']:first-child {
-  border-left-width: 0; /* border-l-0 */
-  padding-left: 0; /* pl-0 */
+  border-inline-start-width: 0; /* border-l-0 */
+  padding-inline-start: 0; /* pl-0 */
 }
 
 .dark .ProseMirror [data-type='columns'] {

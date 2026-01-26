@@ -837,7 +837,7 @@ export default function Editor({
       {/* EDITOR CONTENT */}
       <EditorContent
         editor={editor}
-        className="border rounded-lg p-4 bg-card w-full tiptap [&_.footnotes]:mt-8 [&_.footnotes]:pt-8 [&_.footnotes]:border-t [&_.footnotes]:border-border [&_.footnotes]:list-decimal [&_.footnote-reference]:text-primary [&_.footnote-reference]:align-super [&_.footnote-reference]:text-xs [&_.footnote-reference]:cursor-pointer [&_.footnote-reference]:ml-0.5"
+        className="border rounded-lg p-4 bg-muted w-full tiptap [&_.footnotes]:mt-8 [&_.footnotes]:pt-8 [&_.footnotes]:border-t [&_.footnotes]:border-border [&_.footnotes]:list-decimal [&_.footnote-reference]:text-primary [&_.footnote-reference]:align-super [&_.footnote-reference]:text-xs [&_.footnote-reference]:cursor-pointer [&_.footnote-reference]:ml-0.5"
       />
       <div className="mt-2 text-sm text-muted-foreground">
         {editor.storage.characterCount.characters()} characters
