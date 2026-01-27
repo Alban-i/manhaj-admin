@@ -76,6 +76,7 @@ import { revalidateArticle, revalidateArticles } from '@/actions/revalidate';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { getLanguageWithFlag } from '@/i18n/config';
+import { useTranslations } from 'next-intl';
 
 const initialData = {
   title: '',
@@ -135,6 +136,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   translations,
   individuals,
 }) => {
+  const t = useTranslations('articles');
   const defaultValues = article ?? { ...initialData, is_featured: false };
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
   const initialContentRef = useRef<string>(defaultValues.content ?? '');
@@ -200,9 +202,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
   // Labels
   const toastMessage = defaultValues.id
-    ? 'Article updated.'
-    : 'Article created.';
-  const action = defaultValues.id ? 'Save changes' : 'Create';
+    ? t('articleUpdated')
+    : t('articleCreated');
+  const action = defaultValues.id ? t('saveChanges') : t('create');
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -231,7 +233,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           .single();
 
         if (groupError) {
-          toast.error('Failed to create translation group: ' + groupError.message);
+          toast.error(t('failedToCreateGroup') + ': ' + groupError.message);
           setLoading(false);
           return;
         }
@@ -245,7 +247,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           .eq('id', translationGroupId);
 
         if (updateGroupError) {
-          toast.error('Failed to update translation group: ' + updateGroupError.message);
+          toast.error(t('failedToUpdateGroup') + ': ' + updateGroupError.message);
           setLoading(false);
           return;
         }
@@ -308,7 +310,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           .in('tag_id', tagsToRemove);
 
         if (deleteError) {
-          toast.error('Failed to remove tags');
+          toast.error(t('failedToRemoveTags'));
           console.error('Error removing tags:', deleteError);
         }
       }
@@ -324,7 +326,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           .upsert(tagData, { onConflict: 'translation_group_id,tag_id' });
 
         if (insertError) {
-          toast.error('Failed to add new tags');
+          toast.error(t('failedToAddTags'));
           console.error('Error adding tags:', insertError);
         }
       }
@@ -358,7 +360,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
       router.refresh();
     } catch (err) {
-      toast.error('Something went wrong');
+      toast.error(t('somethingWentWrong'));
     } finally {
       setLoading(false);
     }
@@ -366,7 +368,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
   const onDelete = async () => {
     if (!defaultValues.id) {
-      toast.error('Article not found');
+      toast.error(t('articleNotFound'));
       return;
     }
 
@@ -381,7 +383,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         setLoading(false);
       }
 
-      toast.success('Article deleted.');
+      toast.success(t('articleDeleted'));
 
       // Revalidate frontend cache
       await revalidateArticles();
@@ -391,13 +393,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       form.reset();
       router.refresh();
     } catch (error) {
-      toast.error('Something went wrong when trying to delete');
+      toast.error(t('deleteError'));
     }
   };
 
   const generateSummary = async () => {
     if (!content) {
-      toast.error('Please add some content first');
+      toast.error(t('addContentFirst'));
       return;
     }
 
@@ -418,9 +420,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
       const data = await response.json();
       form.setValue('summary', data.summary);
-      toast.success('Summary generated successfully');
+      toast.success(t('summaryGenerated'));
     } catch (error) {
-      toast.error('Failed to generate summary');
+      toast.error(t('summaryFailed'));
       console.error('Error generating summary:', error);
     } finally {
       setIsGeneratingSummary(false);
@@ -464,7 +466,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Summary</span>
+                    <span>{t('summary')}</span>
                     <Button
                       type="button"
                       variant="outline"
@@ -473,11 +475,11 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       disabled={isGeneratingSummary}
                     >
                       {isGeneratingSummary ? (
-                        'Generating...'
+                        t('generating')
                       ) : (
                         <>
                           <Wand2 className="mr-2 h-4 w-4" />
-                          Generate with AI
+                          {t('generateWithAI')}
                         </>
                       )}
                     </Button>
@@ -491,7 +493,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       <FormItem>
                         <FormControl>
                           <Textarea
-                            placeholder="Article summary..."
+                            placeholder={t('summaryPlaceholder')}
                             className="min-h-[100px]"
                             {...field}
                           />
@@ -508,10 +510,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CalendarIcon className="h-5 w-5" />
-                    Event Date
+                    {t('eventDate')}
                   </CardTitle>
                   <CardDescription>
-                    Historical date for timeline display (optional)
+                    {t('eventDateDescription')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-x-2 gap-y-4">
@@ -521,7 +523,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     name="event_date_hijri"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hijri Date</FormLabel>
+                        <FormLabel>{t('hijriDate')}</FormLabel>
                         <FormControl>
                           <DatePicker
                             calendar={arabic}
@@ -544,13 +546,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                               }
                             }}
                             format="D MMMM YYYY"
-                            placeholder="Select Hijri date"
+                            placeholder={t('selectHijriDate')}
                             containerClassName="w-full"
                             inputClass="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                           />
                         </FormControl>
                         <FormDescription>
-                          Islamic calendar date
+                          {t('hijriDateDescription')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -563,7 +565,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     name="event_date_gregorian"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Gregorian Date</FormLabel>
+                        <FormLabel>{t('gregorianDate')}</FormLabel>
                         <FormControl>
                           <Input
                             type="date"
@@ -587,7 +589,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                           />
                         </FormControl>
                         <FormDescription>
-                          Western calendar date
+                          {t('gregorianDateDescription')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -612,10 +614,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Link2 className="h-5 w-5" />
-                    Shared Data
+                    {t('sharedData')}
                   </CardTitle>
                   <CardDescription>
-                    Changes apply to all translations
+                    {t('sharedDataDescription')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -626,7 +628,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
-                          Author
+                          {t('author')}
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -634,7 +636,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                         >
                           <FormControl className="w-full">
                             <SelectTrigger>
-                              <SelectValue placeholder="Select an author" />
+                              <SelectValue placeholder={t('selectAuthor')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -656,7 +658,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     name="individual_id"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>Individual</FormLabel>
+                        <FormLabel>{t('individual')}</FormLabel>
                         <Popover open={individualOpen} onOpenChange={setIndividualOpen}>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -670,16 +672,16 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                               >
                                 {field.value
                                   ? individuals.find((i) => i.id.toString() === field.value)?.name
-                                  : "Select an individual"}
+                                  : t('selectIndividual')}
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
                           <PopoverContent className="w-[300px] p-0" align="start">
                             <Command>
-                              <CommandInput placeholder="Search individual..." />
+                              <CommandInput placeholder={t('searchIndividual')} />
                               <CommandList>
-                                <CommandEmpty>No individual found.</CommandEmpty>
+                                <CommandEmpty>{t('noIndividualFound')}</CommandEmpty>
                                 <CommandGroup>
                                   {individuals.map((individual) => (
                                     <CommandItem
@@ -717,14 +719,14 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     name="category_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Category</FormLabel>
+                        <FormLabel>{t('category')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl className="w-full">
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a category" />
+                              <SelectValue placeholder={t('selectCategory')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -747,7 +749,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
                   {/* Tags */}
                   <div className="space-y-2">
-                    <FormLabel>Tags</FormLabel>
+                    <FormLabel>{t('tags')}</FormLabel>
                     <div className="flex flex-wrap gap-2">
                       {tags.map((tag) => (
                         <Button
@@ -774,9 +776,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     name="image_url"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cover Image</FormLabel>
+                        <FormLabel>{t('coverImage')}</FormLabel>
                         <FormDescription>
-                          1200 x 630
+                          {t('coverImageSize')}
                         </FormDescription>
                         <FormControl>
                           <ImageUpload
@@ -800,7 +802,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="h-5 w-5" />
-                    Translations
+                    {t('translations')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -810,7 +812,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       {/* Existing translations */}
                       {translations.length > 0 && (
                         <div className="space-y-2">
-                          <span className="text-sm text-muted-foreground">Available translations:</span>
+                          <span className="text-sm text-muted-foreground">{t('availableTranslations')}</span>
                           <div className="flex flex-wrap items-center gap-2 p-3 rounded-md border bg-muted/50">
                             {translations.map((translation) => {
                               const lang = languages.find(
@@ -849,7 +851,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       {/* Create new translation */}
                       {availableLanguagesForTranslation.length > 0 && (
                         <div className="space-y-2">
-                          <span className="text-sm text-muted-foreground">Add translation:</span>
+                          <span className="text-sm text-muted-foreground">{t('addTranslation')}</span>
                           <div className="flex flex-wrap items-center gap-2">
                             {availableLanguagesForTranslation.map((lang) => (
                               <Button
@@ -871,14 +873,14 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       {translations.length === 0 &&
                         availableLanguagesForTranslation.length === 0 && (
                           <p className="text-sm text-muted-foreground">
-                            No translations available.
+                            {t('noTranslationsAvailable')}
                           </p>
                         )}
                     </div>
 
                     {/* Right column - Mark as original */}
                     <div className="space-y-2">
-                      <span className="text-sm text-muted-foreground">Original status:</span>
+                      <span className="text-sm text-muted-foreground">{t('originalStatus')}</span>
                       <FormField
                         control={form.control}
                         name="is_original"
@@ -891,9 +893,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                               />
                             </FormControl>
                             <div className="space-y-1 leading-none">
-                              <FormLabel>Mark as original</FormLabel>
+                              <FormLabel>{t('markAsOriginal')}</FormLabel>
                               <FormDescription>
-                                Source article for translations
+                                {t('sourceArticle')}
                               </FormDescription>
                             </div>
                           </FormItem>
@@ -908,7 +910,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
             {/* ARTICLE DETAILS - Full Width */}
             <Card className="@3xl:col-span-2">
               <CardHeader>
-                <CardTitle>Article Details</CardTitle>
+                <CardTitle>{t('articleDetails')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Title - Full Width & Prominent */}
@@ -917,10 +919,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-lg font-semibold">Title</FormLabel>
+                      <FormLabel className="text-lg font-semibold">{t('titleLabel')}</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Article Title"
+                          placeholder={t('titlePlaceholder')}
                           className="text-2xl @lg:text-3xl font-bold h-14 @lg:h-16"
                           {...field}
                         />
@@ -937,9 +939,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     name="slug"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Slug</FormLabel>
+                        <FormLabel>{t('slug')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="article-slug" {...field} />
+                          <Input placeholder={t('slugPlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -947,14 +949,14 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   />
 
                   <div>
-                    <FormLabel className="mb-2">Status</FormLabel>
+                    <FormLabel className="mb-2">{t('status')}</FormLabel>
                     <TabToggle
                       state={status}
                       setState={(value) => setStatus(value as FormStatus)}
                       picklist={[
-                        { value: 'draft', label: <span className="flex items-center gap-1.5"><FileEdit className="h-3.5 w-3.5" />Draft</span> },
-                        { value: 'published', label: <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />Published</span> },
-                        { value: 'archived', label: <span className="flex items-center gap-1.5"><Archive className="h-3.5 w-3.5" />Archived</span> },
+                        { value: 'draft', label: <span className="flex items-center gap-1.5"><FileEdit className="h-3.5 w-3.5" />{t('statusDraft')}</span> },
+                        { value: 'published', label: <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{t('statusPublished')}</span> },
+                        { value: 'archived', label: <span className="flex items-center gap-1.5"><Archive className="h-3.5 w-3.5" />{t('statusArchived')}</span> },
                       ]}
                     />
                   </div>
@@ -965,7 +967,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
-                          Language
+                          {t('language')}
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -973,7 +975,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                         >
                           <FormControl className="w-full">
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a language" />
+                              <SelectValue placeholder={t('selectLanguage')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -1004,9 +1006,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>Feature this article</FormLabel>
+                          <FormLabel>{t('featureArticle')}</FormLabel>
                           <FormDescription>
-                            Displayed on home page
+                            {t('displayedOnHomePage')}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -1019,7 +1021,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
             {/* Full Width Content Card */}
             <Card className="@3xl:col-span-2">
               <CardHeader>
-                <CardTitle>Content</CardTitle>
+                <CardTitle>{t('content')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Editor
@@ -1039,7 +1041,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
             <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card">
               <div className="flex h-14 items-center justify-end gap-4 px-4 md:px-6">
                 <span className="text-sm text-muted-foreground mr-auto">
-                  Unsaved changes
+                  {t('unsavedChanges')}
                 </span>
                 <Button
                   type="button"
@@ -1051,10 +1053,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   }}
                   disabled={loading}
                 >
-                  Discard
+                  {t('discard')}
                 </Button>
                 <Button type="submit" size="sm" disabled={loading}>
-                  {loading ? 'Saving...' : action}
+                  {loading ? t('saving') : action}
                 </Button>
               </div>
             </div>

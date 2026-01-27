@@ -5,6 +5,7 @@ import { ImagePlus, Trash } from 'lucide-react';
 import { CldImage, CldUploadWidget } from 'next-cloudinary';
 import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
+import { useTranslations } from 'next-intl';
 
 interface ImageUploadProps {
   disabled?: boolean;
@@ -27,6 +28,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   onRemove,
   value,
 }) => {
+  const t = useTranslations('articles');
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -76,7 +78,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               onClick={onClick}
             >
               <ImagePlus className="h-4 w-4" />
-              Ajouter une image
+              {t('addImage')}
             </Button>
           );
         }}

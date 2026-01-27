@@ -84,6 +84,7 @@ import {
   type SlashCommandState,
   type SlashCommand,
 } from './slash-command';
+import { useTranslations } from 'next-intl';
 
 interface EditorProps {
   content?: string;
@@ -106,6 +107,7 @@ export default function Editor({
   articleId,
   onMediaAdded,
 }: EditorProps) {
+  const t = useTranslations('editor');
   const [isMounted, setIsMounted] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
@@ -709,7 +711,7 @@ export default function Editor({
                   className="bg-transparent border-input"
                 >
                   <ImagePlus className="h-4 w-4" />
-                  Image (Cloud)
+                  {t('imageCloud')}
                 </Button>
               );
             }}
@@ -727,7 +729,7 @@ export default function Editor({
             }}
           >
             <Music className="h-4 w-4" />
-            Media
+            {t('media')}
           </Button>
         </ButtonGroup>
 
@@ -754,10 +756,10 @@ export default function Editor({
                 variant="outline"
                 size="sm"
                 className="bg-transparent border-input"
-                title="Post"
+                title={t('post')}
               >
                 <Twitter className="h-4 w-4" />
-                Post
+                {t('post')}
               </Button>
             }
           />
@@ -772,10 +774,10 @@ export default function Editor({
               setSelectedText(text);
               setIsGlossarySelectorOpen(true);
             }}
-            title="Add Glossary Term"
+            title={t('glossary')}
           >
             <BookOpen className="h-4 w-4" />
-            Glossary
+            {t('glossary')}
           </Button>
           <Button
             type="button"
@@ -783,10 +785,10 @@ export default function Editor({
             size="sm"
             className="bg-transparent border-input"
             onClick={() => setIsHonorificSelectorOpen(true)}
-            title="Insert Arabic Honorific"
+            title={t('honorific')}
           >
             <Scroll className="h-4 w-4" />
-            Honorific
+            {t('honorific')}
           </Button>
         </ButtonGroup>
       </div>
@@ -841,7 +843,7 @@ export default function Editor({
         className="border rounded-lg p-4 bg-muted w-full tiptap [&_.footnotes]:mt-8 [&_.footnotes]:pt-8 [&_.footnotes]:border-t [&_.footnotes]:border-border [&_.footnotes]:list-decimal [&_.footnote-reference]:text-primary [&_.footnote-reference]:align-super [&_.footnote-reference]:text-xs [&_.footnote-reference]:cursor-pointer [&_.footnote-reference]:ml-0.5"
       />
       <div className="mt-2 text-sm text-muted-foreground">
-        {editor.storage.characterCount.characters()} characters
+        {editor.storage.characterCount.characters()} {t('characters')}
       </div>
 
       <Separator className="my-4" />
@@ -853,7 +855,7 @@ export default function Editor({
           onCheckedChange={setShowRawHtml}
         />
         <Label htmlFor="show-raw-html" className="text-sm font-medium">
-          Show Raw HTML
+          {t('showRawHtml')}
         </Label>
       </div>
 
@@ -872,7 +874,7 @@ export default function Editor({
         isOpen={isMediaLibraryOpen}
         onClose={() => setIsMediaLibraryOpen(false)}
         onSelect={handleMediaSelect}
-        title="Select Media"
+        title={t('selectMedia')}
       />
 
       {/* Glossary Selector Dialog */}
