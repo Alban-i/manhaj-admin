@@ -112,8 +112,8 @@
   text-indent: 0;
 }
 
-/* Blockquote styling */
-.ProseMirror blockquote {
+/* Quote styling (data-type="quote") */
+.ProseMirror [data-type="quote"] {
   margin-top: 1rem; /* my-4 */
   margin-bottom: 1rem; /* my-4 */
   padding-top: 1rem; /* py-4 */

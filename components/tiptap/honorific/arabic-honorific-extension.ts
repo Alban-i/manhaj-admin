@@ -1,4 +1,6 @@
-import { Mark, mergeAttributes } from '@tiptap/core';
+import { Node, mergeAttributes } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import { HonorificNodeView } from './honorific-node-view';
 
 export interface ArabicHonorificOptions {
   HTMLAttributes: Record<string, unknown>;
@@ -7,21 +9,20 @@ export interface ArabicHonorificOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     arabicHonorific: {
-      setArabicHonorific: (honorificType: string) => ReturnType;
-      unsetArabicHonorific: () => ReturnType;
+      insertArabicHonorific: (honorificType: string) => ReturnType;
     };
   }
 }
 
-export const ArabicHonorificExtension = Mark.create<ArabicHonorificOptions>({
+export const ArabicHonorificExtension = Node.create<ArabicHonorificOptions>({
   name: 'arabicHonorific',
-  inclusive: false,
+  group: 'inline',
+  inline: true,
+  atom: true, // Cannot have content, treated as single unit
 
   addOptions() {
     return {
-      HTMLAttributes: {
-        class: 'arabic-honorific',
-      },
+      HTMLAttributes: {},
     };
   },
 
@@ -38,32 +39,26 @@ export const ArabicHonorificExtension = Mark.create<ArabicHonorificOptions>({
   },
 
   parseHTML() {
-    return [
-      {
-        tag: 'span[data-honorific-type]',
-      },
-    ];
+    return [{ tag: 'span[data-honorific-type]' }];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [
-      'span',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
-      0,
-    ];
+    return ['span', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(HonorificNodeView);
   },
 
   addCommands() {
     return {
-      setArabicHonorific:
+      insertArabicHonorific:
         (honorificType: string) =>
         ({ commands }) => {
-          return commands.setMark(this.name, { honorificType });
-        },
-      unsetArabicHonorific:
-        () =>
-        ({ commands }) => {
-          return commands.unsetMark(this.name);
+          return commands.insertContent({
+            type: this.name,
+            attrs: { honorificType },
+          });
         },
     };
   },

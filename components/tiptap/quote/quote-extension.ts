@@ -49,21 +49,26 @@ const QuoteExtension = Node.create<QuoteOptions, QuoteAttrs>({
       },
       customQuote: {
         default: true,
-        parseHTML: (element) => element.hasAttribute('data-custom-quote'),
-        renderHTML: (attrs) => (attrs.customQuote ? { 'data-custom-quote': true } : {}),
+        parseHTML: (element) =>
+          element.hasAttribute('data-custom-quote') ||
+          element.getAttribute('data-type') === 'quote',
+        renderHTML: () => ({}), // Don't render - data-type="quote" is used instead
       },
     };
   },
 
   parseHTML() {
-    return [{ tag: 'blockquote[data-custom-quote]' }];
+    return [
+      { tag: 'div[data-type="quote"]' }, // New format (primary)
+      { tag: 'blockquote[data-custom-quote]' }, // Legacy format
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
     return [
-      'blockquote',
+      'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-custom-quote': true,
+        'data-type': 'quote',
       }),
       0,
     ];

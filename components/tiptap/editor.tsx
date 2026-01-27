@@ -105,7 +105,6 @@ export default function Editor({
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isGlossarySelectorOpen, setIsGlossarySelectorOpen] = useState(false);
   const [isHonorificSelectorOpen, setIsHonorificSelectorOpen] = useState(false);
-  const [honorificSelection, setHonorificSelection] = useState<{ from: number; to: number; text: string } | null>(null);
   const [selectedText, setSelectedText] = useState('');
   const [showRawHtml, setShowRawHtml] = useState(false);
   const savedCursorPositionRef = useRef<number | null>(null);
@@ -764,13 +763,7 @@ export default function Editor({
             variant="outline"
             size="sm"
             className="bg-transparent border-input"
-            onMouseDown={(e) => {
-              e.preventDefault(); // Prevent editor from losing focus/selection
-              const { from, to } = editor.state.selection;
-              const text = editor.state.doc.textBetween(from, to);
-              setHonorificSelection({ from, to, text });
-              setIsHonorificSelectorOpen(true);
-            }}
+            onClick={() => setIsHonorificSelectorOpen(true)}
             title="Insert Arabic Honorific"
           >
             <Scroll className="h-4 w-4" />
@@ -903,19 +896,8 @@ export default function Editor({
         isOpen={isHonorificSelectorOpen}
         onClose={() => setIsHonorificSelectorOpen(false)}
         onSelect={(type: HonorificType) => {
-          if (editor && honorificSelection) {
-            if (honorificSelection.text) {
-              // Restore the selection and apply honorific
-              editor
-                .chain()
-                .focus()
-                .setTextSelection({ from: honorificSelection.from, to: honorificSelection.to })
-                .setArabicHonorific(type)
-                .run();
-            } else {
-              // Alert user to select text first
-              toast.info('Please select text to apply the honorific to');
-            }
+          if (editor) {
+            editor.chain().focus().insertArabicHonorific(type).run();
           }
         }}
       />
