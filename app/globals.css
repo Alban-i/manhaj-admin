@@ -10,6 +10,14 @@
   font-style: normal;
 }
 
+/* Latin font for RTL editor content - restricted to Latin Unicode range */
+@font-face {
+  font-family: 'Editor-Latin';
+  src: local('Inter'), local('Segoe UI'), local('Roboto'), local('Helvetica Neue'), local('Arial');
+  unicode-range: U+0000-00FF, U+0100-017F, U+0180-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F;
+  /* Basic Latin, Latin Extended-A/B, Latin Additional, General Punctuation, Currency, Letterlike */
+}
+
 .image-class {
   border-radius: 1.5rem !important;
 }
@@ -158,6 +166,7 @@
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
   --font-uthman: 'Uthman';
+  --font-noto-arabic: var(--font-noto-arabic);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -339,4 +348,16 @@
 
 .tiptap blockquote p {
   margin: 0;
+}
+
+/* Arabic font for RTL UI elements */
+[dir='rtl'] body {
+  font-family: var(--font-noto-arabic), 'Noto Sans Arabic', sans-serif;
+}
+
+/* Character-level font switching: Latin chars → system fonts, Arabic chars → Scheherazade */
+/* Editor-Latin has unicode-range restriction, so Arabic falls through to Scheherazade */
+.tiptap,
+.ProseMirror {
+  font-family: 'Editor-Latin', var(--font-arabic), 'Scheherazade New', serif;
 }

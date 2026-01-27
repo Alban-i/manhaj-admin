@@ -5,6 +5,7 @@ import {
   Geist_Mono,
   Scheherazade_New,
   Oxanium,
+  Noto_Sans_Arabic,
 } from 'next/font/google';
 import { Toaster } from 'sonner';
 import '../globals.css';
@@ -54,6 +55,13 @@ const oxanium = Oxanium({
   display: 'swap',
 });
 
+const notoSansArabic = Noto_Sans_Arabic({
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-noto-arabic',
+  subsets: ['arabic'],
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: 'Obs Admin',
   description: 'Obs Admin',
@@ -85,7 +93,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${fira_font.variable} ${oxanium.variable} ${arabic_font.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${fira_font.variable} ${oxanium.variable} ${arabic_font.variable} ${notoSansArabic.variable} antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider

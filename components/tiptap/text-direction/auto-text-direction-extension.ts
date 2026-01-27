@@ -6,13 +6,21 @@ export interface AutoTextDirectionOptions {
 }
 
 const RTL_RANGES = [
-  [0x0590, 0x05FF], // Hebrew
-  [0x0600, 0x06FF], // Arabic
-  [0x0700, 0x074F], // Syriac
-  [0x0780, 0x07BF], // Thaana
-  [0x08A0, 0x08FF], // Arabic Extended-A
-  [0xFB1D, 0xFDFF], // Arabic Presentation Forms-A
-  [0xFE70, 0xFEFF], // Arabic Presentation Forms-B
+  [0x0590, 0x05ff], // Hebrew
+  [0x0600, 0x06ff], // Arabic
+  [0x0700, 0x074f], // Syriac
+  [0x0780, 0x07bf], // Thaana
+  [0x08a0, 0x08ff], // Arabic Extended-A
+  [0xfb1d, 0xfdff], // Arabic Presentation Forms-A
+  [0xfe70, 0xfeff], // Arabic Presentation Forms-B
+];
+
+const LTR_RANGES = [
+  [0x0041, 0x005a], // A-Z
+  [0x0061, 0x007a], // a-z
+  [0x00c0, 0x00ff], // Latin Extended (accented chars)
+  [0x0100, 0x017f], // Latin Extended-A
+  [0x0180, 0x024f], // Latin Extended-B
 ];
 
 function isRTL(char: string): boolean {
@@ -20,25 +28,29 @@ function isRTL(char: string): boolean {
   return RTL_RANGES.some(([start, end]) => code >= start && code <= end);
 }
 
-function hasStrongRTLContent(text: string): boolean {
+function isLTR(char: string): boolean {
+  const code = char.charCodeAt(0);
+  return LTR_RANGES.some(([start, end]) => code >= start && code <= end);
+}
+
+function detectTextDirection(text: string): 'rtl' | 'ltr' | null {
   const trimmedText = text.trim();
-  if (!trimmedText) return false;
-  
-  // Count RTL characters - only consider it strong RTL if there's substantial RTL content
+  if (!trimmedText) return null;
+
   let rtlCount = 0;
+  let ltrCount = 0;
   let totalChars = 0;
-  
+
   for (const char of trimmedText) {
-    if (isRTL(char)) {
-      rtlCount++;
-    }
-    if (/\S/.test(char)) { // Non-whitespace character
-      totalChars++;
-    }
+    if (isRTL(char)) rtlCount++;
+    else if (isLTR(char)) ltrCount++;
+    if (/\S/.test(char)) totalChars++;
   }
-  
-  // Only consider it strong RTL if RTL characters make up significant portion
-  return rtlCount > 0 && (rtlCount / Math.max(totalChars, 1)) > 0.3;
+
+  const total = Math.max(totalChars, 1);
+  if (rtlCount / total > 0.3) return 'rtl';
+  if (ltrCount / total > 0.3) return 'ltr';
+  return null;
 }
 
 export const AutoTextDirectionExtension = Extension.create<AutoTextDirectionOptions>({
@@ -105,12 +117,7 @@ export const AutoTextDirectionExtension = Extension.create<AutoTextDirectionOpti
               }
               
               // Auto-detect direction based on content
-              let shouldHaveDir: 'rtl' | null = null;
-              
-              // Only add dir="rtl" for strong RTL content
-              if (hasStrongRTLContent(nodeText)) {
-                shouldHaveDir = 'rtl';
-              }
+              const shouldHaveDir = detectTextDirection(nodeText);
               
               if (currentDir !== shouldHaveDir) {
                 tr.setNodeMarkup(pos, undefined, {
