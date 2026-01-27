@@ -79,7 +79,7 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
 
   return (
     <div className="flex justify-center">
-      <div className="p-4 bg-card rounded-md relative max-w-lg w-full">
+      <div className="p-4 bg-card rounded-3xl relative max-w-lg w-full">
         <Button
           type="button"
           size="default"

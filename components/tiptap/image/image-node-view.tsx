@@ -157,7 +157,7 @@ const ImageNodeView = ({
           opacity: isDragging ? 0.5 : 1,
           cursor: 'move',
         }}
-        className="rounded-lg shadow-md"
+        className="rounded-3xl shadow-md"
       />
       {/* Show legend only when selected and legend exists */}
       {true && node.attrs.legend && (

@@ -101,7 +101,7 @@ const VideoNodeView = ({
         )}
 
         <div
-          className={`border rounded-md ${selected ? 'border-primary' : 'border-transparent'}`}
+          className={`border rounded-3xl ${selected ? 'border-primary' : 'border-transparent'}`}
           contentEditable={false}
         >
           <VideoPlayer

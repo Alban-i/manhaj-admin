@@ -114,23 +114,15 @@
 
 /* Blockquote styling */
 .ProseMirror blockquote {
-  border-inline-start-width: 4px;
-  border-inline-start-color: var(--color-border);
   margin-top: 1rem; /* my-4 */
   margin-bottom: 1rem; /* my-4 */
   padding-top: 1rem; /* py-4 */
   padding-bottom: 1rem; /* py-4 */
-  padding-inline-start: 1rem; /* px-4 */
-  padding-inline-end: 1rem; /* px-4 */
-  /* font-style: italic; */
+  padding-inline-start: 1.5rem; /* px-6 */
+  padding-inline-end: 1.5rem; /* px-6 */
   color: var(--color-muted-foreground);
-  /* background-color: var(--color-card); */
-}
-
-.dark .ProseMirror blockquote {
-  border-inline-start-color: var(--color-border);
-  color: var(--color-muted-foreground);
-  /* background-color: var(--color-card); */
+  background-color: color-mix(in oklch, var(--color-card) 80%, transparent);
+  border-radius: var(--radius-md);
 }
 
 /* Column layout styling */

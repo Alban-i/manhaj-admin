@@ -74,6 +74,7 @@ Extensions are in `/extensions/` and handle both rendering and data persistence.
 - Error handling with toast notifications
 - Responsive design with TailwindCSS breakpoints
 - Use `@hooks/use-wait.ts` instead of `setTimeout` for delays
+- **Never use `any` as a type** - always use proper types, generics, or `unknown` with type guards
 
 ## Environment Requirements
 

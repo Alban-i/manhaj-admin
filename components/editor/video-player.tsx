@@ -136,7 +136,7 @@ export function VideoPlayer({ src, title, poster }: VideoPlayerProps) {
     <div className="flex justify-center">
       <div
         ref={containerRef}
-        className={`relative max-w-4xl w-full bg-black rounded-md overflow-hidden ${
+        className={`relative max-w-4xl w-full bg-black rounded-3xl overflow-hidden ${
           isFullscreen ? 'h-screen' : ''
         }`}
         onMouseEnter={() => setShowControls(true)}

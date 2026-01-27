@@ -5,7 +5,7 @@ import { Trash2 } from 'lucide-react';
 const QuoteTranslationNodeView = ({ deleteNode }: NodeViewProps) => {
   return (
     <NodeViewWrapper
-      className="relative group mt-4 border-t border-border/50 pt-3"
+      className="relative group mt-3"
       data-quote-translation="true"
     >
       {/* Delete button - appears on hover */}

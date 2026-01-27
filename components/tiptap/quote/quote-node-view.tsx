@@ -71,10 +71,7 @@ const QuoteNodeView = ({
   };
 
   return (
-    <NodeViewWrapper
-      className="relative my-6 group bg-card/30 rounded-lg p-4 pb-8 border-l-4"
-      style={{ borderLeftColor: 'var(--primary)' }}
-    >
+    <NodeViewWrapper className="relative my-6 group bg-card/80 rounded-3xl py-4 px-6 pb-8">
       {/* Hover toolbar */}
       <div
         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10"
@@ -155,8 +152,8 @@ const QuoteNodeView = ({
       {/* Editable content - includes paragraphs AND quoteTranslation */}
       {/* Verse brackets are inline via CSS ::before and ::after */}
       <NodeViewContent
-        className={`quote-content [&>p]:text-xl [&>p]:leading-relaxed [&>p]:m-0 [&>p]:mb-2 outline-none ${
-          isVerse ? 'is-verse' : ''
+        className={`quote-content [&>p]:leading-relaxed [&>p]:m-0 [&>p]:mb-2 outline-none ${
+          isVerse ? 'is-verse' : '[&>p]:text-xl'
         } ${isVerse && hasTranslation ? 'has-translation' : ''}`}
       />
 
@@ -173,10 +170,10 @@ const QuoteNodeView = ({
               rel="noopener noreferrer"
               className="underline pointer-events-auto"
             >
-              — {sourceLabel}
+              {sourceLabel}
             </a>
           ) : (
-            <span>— {sourceLabel}</span>
+            <span>{sourceLabel}</span>
           )}
         </div>
       )}

@@ -842,7 +842,7 @@ export default function Editor({
 
       {showRawHtml && (
         <div className="mt-4">
-          <pre className="bg-muted p-4 rounded-lg border text-sm font-mono overflow-x-auto shadow-md max-h-96">
+          <pre className="bg-muted p-4 rounded-3xl border text-sm font-mono overflow-x-auto shadow-md max-h-96">
             <code className="whitespace-pre-wrap">
               {editor.getHTML().replace(/></g, '>\n<')}
             </code>

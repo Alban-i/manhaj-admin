@@ -13,6 +13,7 @@ import {
 } from '@/types/types';
 import { Json } from '@/types/types_db';
 import { ArticleTranslation } from '@/actions/get-article-translations';
+import { IndividualOption } from '@/actions/get-individuals-for-select';
 
 import {
   Form,
@@ -32,6 +33,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+
 import DeleteButton from '@/components/delete-btn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +61,7 @@ import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon, FileEdit, Archive } from 'lucide-react';
+import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon, FileEdit, Archive, Check, ChevronsUpDown } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import arabic from 'react-date-object/calendars/arabic';
@@ -69,6 +85,7 @@ const initialData = {
   status: 'draft',
   category_id: null,
   author_id: null,
+  individual_id: null,
   id: undefined,
   published_at: null,
   is_featured: false,
@@ -87,6 +104,7 @@ const formSchema = z.object({
   slug: z.string().min(1),
   category_id: z.string().optional(),
   author_id: z.string().min(1, 'Author is required'),
+  individual_id: z.string().optional(),
   is_featured: z.boolean(),
   is_original: z.boolean(),
   image_url: z.string().optional(),
@@ -97,13 +115,14 @@ const formSchema = z.object({
 });
 
 interface ArticleFormProps {
-  article: (Omit<Articles, 'is_published'> & { id?: string }) | null;
+  article: (Omit<Articles, 'is_published'> & { id?: string; individual_id?: number | null }) | null;
   categories: { id: number; name: string }[];
   tags: { id: number; name: string; created_at: string; updated_at: string }[];
   selectedTagIds: number[];
   authors: ProfilesWithRoles[];
   languages: Language[];
   translations: ArticleTranslation[];
+  individuals: IndividualOption[];
 }
 
 const ArticleForm: React.FC<ArticleFormProps> = ({
@@ -114,6 +133,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   authors,
   languages,
   translations,
+  individuals,
 }) => {
   const defaultValues = article ?? { ...initialData, is_featured: false };
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
@@ -122,6 +142,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [selectedTags, setSelectedTags] = useState<number[]>(selectedTagIds);
+  const [individualOpen, setIndividualOpen] = useState(false);
   type FormStatus = 'draft' | 'published' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
     (defaultValues.status?.toLowerCase() as FormStatus) ?? 'draft'
@@ -140,6 +161,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       slug: defaultValues.slug ?? '',
       category_id: defaultValues.category_id?.toString() ?? undefined,
       author_id: defaultValues.author_id?.toString() ?? undefined,
+      individual_id: defaultValues.individual_id?.toString() ?? undefined,
       is_featured: defaultValues.is_featured ?? false,
       is_original: defaultValues.is_original ?? true,
       image_url: defaultValues.image_url ?? '',
@@ -192,6 +214,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       const sharedData = {
         author_id: values.author_id || null,
         category_id: values.category_id ? Number(values.category_id) : null,
+        individual_id: values.individual_id ? Number(values.individual_id) : null,
         image_url: values.image_url || null,
         updated_at: new Date().toISOString(),
       };
@@ -312,6 +335,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         slug: data.slug ?? '',
         category_id: values.category_id ?? undefined,
         author_id: values.author_id ?? undefined,
+        individual_id: values.individual_id ?? undefined,
         is_featured: data.is_featured ?? false,
         is_original: data.is_original ?? true,
         image_url: values.image_url ?? '',
@@ -621,6 +645,67 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                             ))}
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Individual */}
+                  <FormField
+                    control={form.control}
+                    name="individual_id"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Individual</FormLabel>
+                        <Popover open={individualOpen} onOpenChange={setIndividualOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  "w-full justify-between",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value
+                                  ? individuals.find((i) => i.id.toString() === field.value)?.name
+                                  : "Select an individual"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[300px] p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Search individual..." />
+                              <CommandList>
+                                <CommandEmpty>No individual found.</CommandEmpty>
+                                <CommandGroup>
+                                  {individuals.map((individual) => (
+                                    <CommandItem
+                                      key={individual.id}
+                                      value={individual.name}
+                                      onSelect={() => {
+                                        field.onChange(individual.id.toString());
+                                        setIndividualOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          field.value === individual.id.toString()
+                                            ? "opacity-100"
+                                            : "opacity-0"
+                                        )}
+                                      />
+                                      {individual.name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
