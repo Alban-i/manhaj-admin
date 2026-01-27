@@ -262,3 +262,118 @@
     background-color: transparent;
   }
 }
+
+/* Arabic Honorific Styling - CSS mask-image approach */
+.ProseMirror .arabic-honorific {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.ProseMirror .arabic-honorific::after {
+  content: '';
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  background-color: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+/* Allah honorifics */
+.ProseMirror .arabic-honorific[data-honorific-type="awj"]::after {
+  mask-image: url('/calligraphy/awj.svg');
+  -webkit-mask-image: url('/calligraphy/awj.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="swt"]::after {
+  mask-image: url('/calligraphy/swt.svg');
+  -webkit-mask-image: url('/calligraphy/swt.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="twt"]::after {
+  mask-image: url('/calligraphy/twt.svg');
+  -webkit-mask-image: url('/calligraphy/twt.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="jal"]::after {
+  mask-image: url('/calligraphy/jal.svg');
+  -webkit-mask-image: url('/calligraphy/jal.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="jwa"]::after {
+  mask-image: url('/calligraphy/jwa.svg');
+  -webkit-mask-image: url('/calligraphy/jwa.svg');
+}
+
+/* Prophet ﷺ */
+.ProseMirror .arabic-honorific[data-honorific-type="sas"]::after {
+  mask-image: url('/calligraphy/sas.svg');
+  -webkit-mask-image: url('/calligraphy/sas.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="asws"]::after {
+  mask-image: url('/calligraphy/asws.svg');
+  -webkit-mask-image: url('/calligraphy/asws.svg');
+}
+
+/* Prophets */
+.ProseMirror .arabic-honorific[data-honorific-type="as"]::after {
+  mask-image: url('/calligraphy/as.svg');
+  -webkit-mask-image: url('/calligraphy/as.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="ahas"]::after {
+  mask-image: url('/calligraphy/ahas.svg');
+  -webkit-mask-image: url('/calligraphy/ahas.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="amas"]::after {
+  mask-image: url('/calligraphy/amas.svg');
+  -webkit-mask-image: url('/calligraphy/amas.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="amus"]::after {
+  mask-image: url('/calligraphy/amus.svg');
+  -webkit-mask-image: url('/calligraphy/amus.svg');
+}
+
+/* Companions */
+.ProseMirror .arabic-honorific[data-honorific-type="radu"]::after {
+  mask-image: url('/calligraphy/radu.svg');
+  -webkit-mask-image: url('/calligraphy/radu.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="rada"]::after {
+  mask-image: url('/calligraphy/rada.svg');
+  -webkit-mask-image: url('/calligraphy/rada.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="radum"]::after {
+  mask-image: url('/calligraphy/radum.svg');
+  -webkit-mask-image: url('/calligraphy/radum.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="raduma"]::after {
+  mask-image: url('/calligraphy/raduma.svg');
+  -webkit-mask-image: url('/calligraphy/raduma.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="radunna"]::after {
+  mask-image: url('/calligraphy/radunna.svg');
+  -webkit-mask-image: url('/calligraphy/radunna.svg');
+}
+
+/* Scholars */
+.ProseMirror .arabic-honorific[data-honorific-type="rahimahu"]::after {
+  mask-image: url('/calligraphy/rahimahu.svg');
+  -webkit-mask-image: url('/calligraphy/rahimahu.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="rahimaha"]::after {
+  mask-image: url('/calligraphy/rahimaha.svg');
+  -webkit-mask-image: url('/calligraphy/rahimaha.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="rahimahum"]::after {
+  mask-image: url('/calligraphy/rahimahum.svg');
+  -webkit-mask-image: url('/calligraphy/rahimahum.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="rahimahuma"]::after {
+  mask-image: url('/calligraphy/rahimahuma.svg');
+  -webkit-mask-image: url('/calligraphy/rahimahuma.svg');
+}
+.ProseMirror .arabic-honorific[data-honorific-type="rahimahunna"]::after {
+  mask-image: url('/calligraphy/rahimahunna.svg');
+  -webkit-mask-image: url('/calligraphy/rahimahunna.svg');
+}

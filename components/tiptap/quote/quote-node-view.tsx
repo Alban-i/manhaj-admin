@@ -42,6 +42,7 @@ const QuoteNodeView = ({
     if (!editor || typeof getPos !== 'function') return;
 
     const pos = getPos();
+    if (pos === undefined) return;
     const endPos = pos + node.nodeSize - 1;
 
     editor

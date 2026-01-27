@@ -22,6 +22,7 @@ import {
   Asterisk,
   Bold,
   BookOpen,
+  Scroll,
   Code,
   Columns,
   Heading2,
@@ -75,6 +76,8 @@ import { addArticleMedia } from '@/actions/media/add-article-media';
 import { toast } from 'sonner';
 import { GlossaryTermExtension } from './glossary/glossary-term-extension';
 import { GlossarySelectorDialog } from './glossary/glossary-selector-dialog';
+import { ArabicHonorificExtension, HonorificSelectorDialog } from './honorific';
+import { type HonorificType } from '@/lib/honorifics';
 
 interface EditorProps {
   content?: string;
@@ -101,6 +104,8 @@ export default function Editor({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isGlossarySelectorOpen, setIsGlossarySelectorOpen] = useState(false);
+  const [isHonorificSelectorOpen, setIsHonorificSelectorOpen] = useState(false);
+  const [honorificSelection, setHonorificSelection] = useState<{ from: number; to: number; text: string } | null>(null);
   const [selectedText, setSelectedText] = useState('');
   const [showRawHtml, setShowRawHtml] = useState(false);
   const savedCursorPositionRef = useRef<number | null>(null);
@@ -155,40 +160,23 @@ export default function Editor({
       QuoteExtension,
       QuoteTranslationExtension,
       GlossaryTermExtension,
+      ArabicHonorificExtension,
     ],
     content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
     onCreate: () => {
-      // Mark as initialized after a short timeout to allow the editor to fully stabilize
-      // This prevents spurious onUpdate calls during React StrictMode double-mount
-      // Using setTimeout instead of queueMicrotask because focus events fire after microtasks
-      setTimeout(() => {
-        isInitializedRef.current = true;
-      }, 100);
+      isInitializedRef.current = true;
     },
     onUpdate: ({ editor }) => {
+      // Ignore updates during initialization
+      if (!isInitializedRef.current) return;
+
       const newContent = editor.getHTML();
 
-      // Ignore spurious updates during initialization (React StrictMode double-mount issue)
-      // If unexpected content appears before initialization, reset to the original content
-      if (!isInitializedRef.current) {
-        // lastContentRef holds the expected initial content
-        const expectedContent = lastContentRef.current || '<p></p>';
-        if (newContent !== expectedContent && newContent !== '<p></p>') {
-          // Reset to expected content on next tick to avoid infinite loop
-          queueMicrotask(() => {
-            editor.commands.setContent(expectedContent);
-          });
-        }
-        return;
-      }
-
-      // Only notify parent if content structure actually changed
-      // This prevents unnecessary re-renders from NodeView internal state updates
+      // Only notify parent if content actually changed
       if (lastContentRef.current !== newContent) {
         lastContentRef.current = newContent;
-        const json = editor.getJSON();
-        onChange?.(newContent, json);
+        onChange?.(newContent, editor.getJSON());
       }
     },
     editorProps: {
@@ -771,6 +759,23 @@ export default function Editor({
             <BookOpen className="h-4 w-4" />
             Glossary
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="bg-transparent border-input"
+            onMouseDown={(e) => {
+              e.preventDefault(); // Prevent editor from losing focus/selection
+              const { from, to } = editor.state.selection;
+              const text = editor.state.doc.textBetween(from, to);
+              setHonorificSelection({ from, to, text });
+              setIsHonorificSelectorOpen(true);
+            }}
+            title="Insert Arabic Honorific"
+          >
+            <Scroll className="h-4 w-4" />
+            Honorific
+          </Button>
         </ButtonGroup>
       </div>
 
@@ -891,6 +896,28 @@ export default function Editor({
           }
         }}
         selectedText={selectedText}
+      />
+
+      {/* Honorific Selector Dialog */}
+      <HonorificSelectorDialog
+        isOpen={isHonorificSelectorOpen}
+        onClose={() => setIsHonorificSelectorOpen(false)}
+        onSelect={(type: HonorificType) => {
+          if (editor && honorificSelection) {
+            if (honorificSelection.text) {
+              // Restore the selection and apply honorific
+              editor
+                .chain()
+                .focus()
+                .setTextSelection({ from: honorificSelection.from, to: honorificSelection.to })
+                .setArabicHonorific(type)
+                .run();
+            } else {
+              // Alert user to select text first
+              toast.info('Please select text to apply the honorific to');
+            }
+          }
+        }}
       />
     </div>
   );
