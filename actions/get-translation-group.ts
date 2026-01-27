@@ -4,6 +4,7 @@ export interface TranslationGroupData {
   id: string;
   author_id: string | null;
   category_id: number | null;
+  individual_id: number | null;
   image_url: string | null;
   tags: number[];
 }
@@ -20,7 +21,7 @@ export default async function getTranslationGroup(
   // Get translation group data
   const { data: group, error: groupError } = await supabase
     .from('translation_groups')
-    .select('id, author_id, category_id, image_url')
+    .select('id, author_id, category_id, individual_id, image_url')
     .eq('id', translationGroupId)
     .single();
 

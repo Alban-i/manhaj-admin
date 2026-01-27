@@ -6,6 +6,7 @@ import getCategories from '@/actions/get-categories';
 import { getActiveLanguages } from '@/actions/get-languages';
 import getTags from '@/actions/get-tags';
 import getTranslationGroup from '@/actions/get-translation-group';
+import getIndividualsForSelect from '@/actions/get-individuals-for-select';
 import ArticleForm from './components/article-form';
 
 const ArticlePage = async ({
@@ -18,13 +19,14 @@ const ArticlePage = async ({
   const { slug } = await params;
   const query = await searchParams;
 
-  const [article, categories, tags, articleTags, authors, languages] = await Promise.all([
+  const [article, categories, tags, articleTags, authors, languages, individuals] = await Promise.all([
     getArticle(slug),
     getCategories(),
     getTags(),
     getArticleTags(slug),
     getAuthors(),
     getActiveLanguages(),
+    getIndividualsForSelect(),
   ]);
 
   if (article === 'error') {
@@ -60,6 +62,7 @@ const ArticlePage = async ({
     status: 'draft',
     category_id: translationGroup?.category_id?.toString() ?? null,
     author_id: translationGroup?.author_id ?? null,
+    individual_id: translationGroup?.individual_id ?? null,
     id: undefined,
     published_at: null,
     is_featured: false,
@@ -82,6 +85,7 @@ const ArticlePage = async ({
         authors={authors}
         languages={languages}
         translations={translations}
+        individuals={individuals}
       />
     </div>
   );

@@ -14,6 +14,7 @@ import { FootnotesV2Extension } from './footnotes-v2/footnotes-v2-extension-new'
 import { FootnoteV2Extension } from './footnotes-v2/footnote-v2-extension-new';
 import { FootnoteReferenceV2Extension } from './footnotes-v2/footnote-reference-v2-extension-new';
 import QuoteExtension from './quote/quote-extension';
+import QuoteTranslationExtension from './quote/quote-translation-extension';
 
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
@@ -35,6 +36,7 @@ import {
   Music,
   Quote,
   Rows,
+  TextQuote,
   Split,
   Table as TableIcon,
   Trash2,
@@ -151,6 +153,7 @@ export default function Editor({
       // PostReference,
       DynamicPostReference,
       QuoteExtension,
+      QuoteTranslationExtension,
       GlossaryTermExtension,
     ],
     content: content || '<p></p>',
@@ -533,19 +536,31 @@ export default function Editor({
                 .insertContent({
                   type: 'quote',
                   attrs: {
-                    original: '',
-                    translation: '',
+                    isVerse: false,
                     sourceLabel: '',
                     sourceUrl: '',
-                    autoOpen: true,
                   },
+                  content: [
+                    {
+                      type: 'paragraph',
+                    },
+                  ],
                 })
                 .run();
-              editor.commands.focus();
             }}
           >
             <Quote className="h-4 w-4" />
           </Button>
+          <Toggle
+            pressed={editor.isActive('blockquote')}
+            onPressedChange={() => editor.chain().focus().toggleBlockquote().run()}
+            size="sm"
+            variant="outline"
+            className="bg-transparent border-input h-8 w-8 data-[state=on]:bg-accent"
+            title="Simple Blockquote"
+          >
+            <TextQuote className="h-4 w-4" />
+          </Toggle>
         </ButtonGroup>
 
         {/* GROUP 7: Layout, Footnote, Table */}

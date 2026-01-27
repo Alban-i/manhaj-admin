@@ -1,157 +1,185 @@
-import { useState, useEffect, useRef } from 'react';
-import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
+import { useState } from 'react';
+import { NodeViewWrapper, NodeViewContent, NodeViewProps } from '@tiptap/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { TabToggle } from '@/components/ui/tab-toggle';
-import { Quote as QuoteIcon } from 'lucide-react';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { BookOpen, Languages, Link2, Trash2 } from 'lucide-react';
 
 const QuoteNodeView = ({
   node,
   updateAttributes,
+  deleteNode,
+  getPos,
+  editor,
 }: NodeViewProps) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const hasOpenedRef = useRef(false);
-  const [original, setOriginal] = useState(node.attrs.original || '');
-  const [translation, setTranslation] = useState(node.attrs.translation || '');
-  const [sourceLabel, setSourceLabel] = useState(node.attrs.sourceLabel || '');
-  const [sourceUrl, setSourceUrl] = useState(node.attrs.sourceUrl || '');
-  const [styleType, setStyleType] = useState(node.attrs.styleType || 'verse');
+  const [sourcePopoverOpen, setSourcePopoverOpen] = useState(false);
+  const [tempSourceLabel, setTempSourceLabel] = useState(
+    node.attrs.sourceLabel || ''
+  );
+  const [tempSourceUrl, setTempSourceUrl] = useState(
+    node.attrs.sourceUrl || ''
+  );
 
-  useEffect(() => {
-    if (node.attrs.autoOpen && !hasOpenedRef.current) {
-      setDialogOpen(true);
-      hasOpenedRef.current = true;
-    }
-  }, [node.attrs.autoOpen]);
+  const isVerse = node.attrs.isVerse ?? false;
+  const sourceLabel = node.attrs.sourceLabel || '';
+  const sourceUrl = node.attrs.sourceUrl || '';
 
-  // When the dialog is actually opened/closed, clear the autoOpen attribute if needed
-  const handleDialogOpenChange = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open && node.attrs.autoOpen) {
-      updateAttributes({ autoOpen: false });
-    }
+  // Check if translation exists (safely)
+  const hasTranslation =
+    node.content?.content?.some(
+      (child) => child.type.name === 'quoteTranslation'
+    ) ?? false;
+
+  const handleVerseToggle = () => {
+    updateAttributes({ isVerse: !isVerse });
   };
 
-  const handleSave = () => {
+  const handleAddTranslation = () => {
+    if (!editor || typeof getPos !== 'function') return;
+
+    const pos = getPos();
+    const endPos = pos + node.nodeSize - 1;
+
+    editor
+      .chain()
+      .focus()
+      .insertContentAt(endPos, {
+        type: 'quoteTranslation',
+        content: [{ type: 'paragraph' }],
+      })
+      .run();
+  };
+
+  const handleSaveSource = () => {
     updateAttributes({
-      original,
-      translation,
-      sourceLabel,
-      sourceUrl,
-      styleType,
+      sourceLabel: tempSourceLabel,
+      sourceUrl: tempSourceUrl,
     });
-    setDialogOpen(false);
+    setSourcePopoverOpen(false);
   };
 
-  // Drag logic (optional, can be added if needed)
+  const handleSourcePopoverOpen = (open: boolean) => {
+    if (open) {
+      setTempSourceLabel(sourceLabel);
+      setTempSourceUrl(sourceUrl);
+    }
+    setSourcePopoverOpen(open);
+  };
 
   return (
-    <NodeViewWrapper className="relative my-6 group text-foreground border-l-primary rounded border-l-4 shadow-sm p-0 text-center">
-      {/* CONTROL BAR */}
+    <NodeViewWrapper
+      className="relative my-6 group bg-card/30 rounded-lg p-4 pb-8 border-l-4"
+      style={{ borderLeftColor: 'var(--primary)' }}
+    >
+      {/* Hover toolbar */}
       <div
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-2"
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10"
         contentEditable={false}
       >
-        <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" type="button">
-              Edit Quote
+        {/* Verse toggle */}
+        <Button
+          variant={isVerse ? 'default' : 'ghost'}
+          size="sm"
+          type="button"
+          onClick={handleVerseToggle}
+          title={isVerse ? 'Remove verse style' : 'Mark as verse'}
+          className="h-7 w-7 p-0"
+        >
+          <BookOpen className="w-4 h-4" />
+        </Button>
+
+        {/* Add translation - only if no translation exists */}
+        {!hasTranslation && (
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
+            onClick={handleAddTranslation}
+            title="Add translation"
+            className="h-7 w-7 p-0"
+          >
+            <Languages className="w-4 h-4" />
+          </Button>
+        )}
+
+        {/* Source popover */}
+        <Popover open={sourcePopoverOpen} onOpenChange={handleSourcePopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant={sourceLabel ? 'default' : 'ghost'}
+              size="sm"
+              type="button"
+              title="Edit source"
+              className="h-7 w-7 p-0"
+            >
+              <Link2 className="w-4 h-4" />
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Quote</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col gap-4">
-              <TabToggle
-                picklist={[
-                  { label: 'Verse', value: 'verse' },
-                  { label: 'Hadith', value: 'hadith' },
-                  { label: 'Regular', value: 'regular' },
-                ]}
-                state={styleType}
-                setState={setStyleType}
-                className="mb-2"
-              />
+          </PopoverTrigger>
+          <PopoverContent className="w-80" align="end">
+            <div className="flex flex-col gap-3">
+              <div className="font-medium text-sm">Source</div>
               <Input
-                placeholder="Original"
-                value={original}
-                onChange={(e) => setOriginal(e.target.value)}
-              />
-              <Input
-                placeholder="Translation (optional)"
-                value={translation}
-                onChange={(e) => setTranslation(e.target.value)}
-              />
-              <Input
-                placeholder="Source label (optional)"
-                value={sourceLabel}
-                onChange={(e) => setSourceLabel(e.target.value)}
+                placeholder="Source label (e.g., Surah Al-Baqarah: 255)"
+                value={tempSourceLabel}
+                onChange={(e) => setTempSourceLabel(e.target.value)}
               />
               <Input
                 placeholder="Source URL (optional)"
-                value={sourceUrl}
-                onChange={(e) => setSourceUrl(e.target.value)}
+                value={tempSourceUrl}
+                onChange={(e) => setTempSourceUrl(e.target.value)}
               />
-              <Button onClick={handleSave} type="button">
+              <Button onClick={handleSaveSource} type="button" size="sm">
                 Save
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          </PopoverContent>
+        </Popover>
+
+        {/* Delete */}
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          onClick={deleteNode}
+          title="Delete quote"
+          className="h-7 w-7 p-0 hover:bg-destructive hover:text-destructive-foreground"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
       </div>
 
-      {/* BODY */}
-      <blockquote className="m-0 p-0 border-none">
-        {original && (
-          <p
-            className="text-2xl font-serif leading-relaxed mb-2"
-            style={{ color: 'var(--primary)' }}
-          >
-            {styleType === 'verse' ? `﴾ ${original} ﴿` : original}
-          </p>
-        )}
-        {translation && (
-          <p className="text-base italic text-muted-foreground mb-2">
-            {translation}
-          </p>
-        )}
-        {sourceLabel && (
-          <div
-            className="absolute bottom-2 right-4 text-xs pointer-events-none text-muted-foreground"
-            contentEditable={false}
-          >
-            {sourceUrl ? (
-              <a
-                href={sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                {sourceLabel}
-              </a>
-            ) : (
-              sourceLabel
-            )}
-          </div>
-        )}
-      </blockquote>
-      {/* DECORATIVE ICON */}
-      <span
-        className="pointer-events-none select-none absolute top-1/2 right-6 -translate-y-1/2 opacity-10 text-[64px] font-bold"
-        aria-hidden="true"
-      >
-        {styleType === 'regular' && <QuoteIcon className="w-16 h-16" />}
-        {styleType === 'verse' && <span className="font-serif">Q</span>}
-        {styleType === 'hadith' && <span className="font-serif">H</span>}
-      </span>
+      {/* Editable content - includes paragraphs AND quoteTranslation */}
+      {/* Verse brackets are inline via CSS ::before and ::after */}
+      <NodeViewContent
+        className={`quote-content [&>p]:text-xl [&>p]:leading-relaxed [&>p]:m-0 [&>p]:mb-2 outline-none ${
+          isVerse ? 'is-verse' : ''
+        } ${isVerse && hasTranslation ? 'has-translation' : ''}`}
+      />
+
+      {/* Source label */}
+      {sourceLabel && (
+        <div
+          className="absolute bottom-2 right-4 text-xs text-muted-foreground pointer-events-none"
+          contentEditable={false}
+        >
+          {sourceUrl ? (
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline pointer-events-auto"
+            >
+              — {sourceLabel}
+            </a>
+          ) : (
+            <span>— {sourceLabel}</span>
+          )}
+        </div>
+      )}
     </NodeViewWrapper>
   );
 };

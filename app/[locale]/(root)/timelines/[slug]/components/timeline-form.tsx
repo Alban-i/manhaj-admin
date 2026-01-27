@@ -47,6 +47,7 @@ import {
 } from '@/actions/upsert-timeline';
 import ArticleSelector from './article-selector';
 import Link from 'next/link';
+import { createClient } from '@/providers/supabase/client';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -94,6 +95,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
     (timeline?.status?.toLowerCase() as FormStatus) ?? 'draft'
   );
   const [loading, setLoading] = useState(false);
+  const supabase = createClient();
   const router = useRouter();
 
   type FormData = z.infer<typeof formSchema>;
@@ -151,6 +153,47 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
     try {
       setLoading(true);
 
+      let translationGroupId = defaultValues.translation_group_id;
+
+      // Shared data that goes to translation_groups
+      const sharedData = {
+        category_id: values.category_id ? Number(values.category_id) : null,
+        image_url: values.image_url || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      // For new timelines without translation_group_id, create a new translation_group
+      if (!translationGroupId) {
+        const { data: newGroup, error: groupError } = await supabase
+          .from('translation_groups')
+          .insert({
+            ...sharedData,
+            created_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (groupError) {
+          toast.error('Failed to create translation group: ' + groupError.message);
+          setLoading(false);
+          return;
+        }
+
+        translationGroupId = newGroup.id;
+      } else {
+        // Update existing translation_group with shared data
+        const { error: updateGroupError } = await supabase
+          .from('translation_groups')
+          .update(sharedData)
+          .eq('id', translationGroupId);
+
+        if (updateGroupError) {
+          toast.error('Failed to update translation group: ' + updateGroupError.message);
+          setLoading(false);
+          return;
+        }
+      }
+
       const result = await upsertTimeline({
         id: timeline?.id,
         slug: values.slug,
@@ -161,7 +204,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
         language: values.language,
         category_id: values.category_id ? Number(values.category_id) : null,
         is_original: values.is_original,
-        translation_group_id: defaultValues.translation_group_id,
+        translation_group_id: translationGroupId,
       });
 
       if (!result.success) {
@@ -377,33 +420,6 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                 </CardContent>
               </Card>
 
-              {/* ARTICLES */}
-              {timeline?.id && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Timeline Events</CardTitle>
-                    <CardDescription>
-                      Add and arrange articles in this timeline
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ArticleSelector
-                      timelineId={timeline.id}
-                      timelineSlug={timeline.slug}
-                      timelineLanguage={form.watch('language')}
-                      timelineCategoryId={form.watch('category_id') ? Number(form.watch('category_id')) : undefined}
-                      timelineCategoryName={
-                        form.watch('category_id')
-                          ? categories.find((c) => c.id.toString() === form.watch('category_id'))?.name
-                          : undefined
-                      }
-                      availableArticles={availableArticles}
-                      timelineEvents={timelineEvents}
-                      authors={authors}
-                    />
-                  </CardContent>
-                </Card>
-              )}
             </div>
 
             {/* Right Column */}
@@ -433,92 +449,98 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                   />
                 </CardContent>
               </Card>
+            </div>
 
-              {/* Translations */}
-              {defaultValues.id && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Globe className="h-5 w-5" />
-                      Translations
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Existing translations */}
-                    {translations.length > 0 && (
-                      <div className="space-y-2">
-                        <span className="text-sm text-muted-foreground">Available translations:</span>
-                        <div className="flex flex-wrap items-center gap-2 p-3 rounded-md border bg-muted/50">
-                          {translations.map((translation) => {
-                            const lang = languages.find(
-                              (l) => l.code === translation.language
-                            );
-                            const isCurrent = translation.id === defaultValues.id;
-                            const displayName = getLanguageWithFlag(
-                              translation.language,
-                              lang?.native_name || translation.language.toUpperCase()
-                            );
-                            return isCurrent ? (
-                              <Badge
-                                key={translation.id}
-                                variant="default"
-                                className="text-xs gap-1 cursor-default py-1.5 px-3"
-                              >
-                                {translation.is_original && <Star className="h-3 w-3 fill-current" />}
-                                {displayName}
-                              </Badge>
-                            ) : (
-                              <Link key={translation.id} href={`/timelines/${translation.slug}`}>
+            {/* TRANSLATIONS - Full Width */}
+            {defaultValues.id && (
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5" />
+                    Translations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid @xl:grid-cols-[1fr_auto] gap-4 items-start">
+                    {/* Left column - Translations */}
+                    <div className="space-y-4">
+                      {/* Existing translations */}
+                      {translations.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">Available translations:</span>
+                          <div className="flex flex-wrap items-center gap-2 p-3 rounded-md border bg-muted/50">
+                            {translations.map((translation) => {
+                              const lang = languages.find(
+                                (l) => l.code === translation.language
+                              );
+                              const isCurrent = translation.id === defaultValues.id;
+                              const displayName = getLanguageWithFlag(
+                                translation.language,
+                                lang?.native_name || translation.language.toUpperCase()
+                              );
+                              return isCurrent ? (
                                 <Badge
-                                  variant="outline"
-                                  className="text-xs gap-1 cursor-pointer hover:bg-background py-1.5 px-3"
+                                  key={translation.id}
+                                  variant="default"
+                                  className="text-xs gap-1 cursor-default py-1.5 px-3"
                                 >
                                   {translation.is_original && <Star className="h-3 w-3 fill-current" />}
                                   {displayName}
                                 </Badge>
-                              </Link>
-                            );
-                          })}
+                              ) : (
+                                <Link key={translation.id} href={`/timelines/${translation.slug}`}>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs gap-1 cursor-pointer hover:bg-background py-1.5 px-3"
+                                  >
+                                    {translation.is_original && <Star className="h-3 w-3 fill-current" />}
+                                    {displayName}
+                                  </Badge>
+                                </Link>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )}
-
-                    {/* Create new translation */}
-                    {availableLanguagesForTranslation.length > 0 && (
-                      <div className="space-y-2">
-                        <span className="text-sm text-muted-foreground">Add translation:</span>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {availableLanguagesForTranslation.map((lang) => (
-                            <Button
-                              key={lang.code}
-                              variant="outline"
-                              size="sm"
-                              type="button"
-                              onClick={() => createTranslation(lang.code)}
-                              className="gap-1 h-8"
-                            >
-                              <Plus className="h-3 w-3" />
-                              {getLanguageWithFlag(lang.code, lang.native_name)}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {translations.length === 0 &&
-                      availableLanguagesForTranslation.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                          No translations available.
-                        </p>
                       )}
 
-                    {/* Mark as original */}
-                    <div className="pt-2 border-t">
+                      {/* Create new translation */}
+                      {availableLanguagesForTranslation.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">Add translation:</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {availableLanguagesForTranslation.map((lang) => (
+                              <Button
+                                key={lang.code}
+                                variant="outline"
+                                size="sm"
+                                type="button"
+                                onClick={() => createTranslation(lang.code)}
+                                className="gap-1 h-8"
+                              >
+                                <Plus className="h-3 w-3" />
+                                {getLanguageWithFlag(lang.code, lang.native_name)}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {translations.length === 0 &&
+                        availableLanguagesForTranslation.length === 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            No translations available.
+                          </p>
+                        )}
+                    </div>
+
+                    {/* Right column - Mark as original */}
+                    <div className="space-y-2">
+                      <span className="text-sm text-muted-foreground">Original status:</span>
                       <FormField
                         control={form.control}
                         name="is_original"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormItem className="flex flex-row items-center space-x-2 space-y-0 border rounded-md p-3 bg-muted/50">
                             <FormControl>
                               <Checkbox
                                 checked={field.value}
@@ -535,10 +557,38 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                         )}
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* TIMELINE EVENTS - Full Width */}
+            {timeline?.id && (
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle>Timeline Events</CardTitle>
+                  <CardDescription>
+                    Add and arrange articles in this timeline
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ArticleSelector
+                    timelineId={timeline.id}
+                    timelineSlug={timeline.slug}
+                    timelineLanguage={form.watch('language')}
+                    timelineCategoryId={form.watch('category_id') ? Number(form.watch('category_id')) : undefined}
+                    timelineCategoryName={
+                      form.watch('category_id')
+                        ? categories.find((c) => c.id.toString() === form.watch('category_id'))?.name
+                        : undefined
+                    }
+                    availableArticles={availableArticles}
+                    timelineEvents={timelineEvents}
+                    authors={authors}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </fieldset>
         </form>
       </Form>

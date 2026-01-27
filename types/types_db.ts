@@ -831,6 +831,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_original: boolean
           language: string | null
           slug: string
           status: string | null
@@ -844,6 +845,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_original?: boolean
           language?: string | null
           slug: string
           status?: string | null
@@ -857,6 +859,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_original?: boolean
           language?: string | null
           slug?: string
           status?: string | null
@@ -928,6 +931,7 @@ export type Database = {
           created_at: string | null
           id: string
           image_url: string | null
+          individual_id: number | null
           updated_at: string | null
         }
         Insert: {
@@ -936,6 +940,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_url?: string | null
+          individual_id?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -944,6 +949,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_url?: string | null
+          individual_id?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -959,6 +965,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "translation_groups_individual_id_fkey"
+            columns: ["individual_id"]
+            isOneToOne: false
+            referencedRelation: "individuals"
             referencedColumns: ["id"]
           },
         ]

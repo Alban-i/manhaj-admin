@@ -7,19 +7,15 @@ export interface QuoteOptions {
 }
 
 export interface QuoteAttrs {
-  quote?: string;
-  translation?: string;
+  isVerse?: boolean;
   sourceLabel?: string;
   sourceUrl?: string;
 }
 
-const QuoteExtension = Node.create<
-  QuoteOptions,
-  QuoteAttrs
->({
+const QuoteExtension = Node.create<QuoteOptions, QuoteAttrs>({
   name: 'quote',
   group: 'block',
-  content: '', // no inner content, just attributes
+  content: 'paragraph+ quoteTranslation?', // Editable content + optional translation
   defining: true,
   draggable: true,
   selectable: false,
@@ -33,17 +29,11 @@ const QuoteExtension = Node.create<
 
   addAttributes() {
     return {
-      original: {
-        default: '',
-        parseHTML: (element) => element.getAttribute('data-original') || '',
+      isVerse: {
+        default: false,
+        parseHTML: (element) => element.getAttribute('data-is-verse') === 'true',
         renderHTML: (attrs) =>
-          attrs.original ? { 'data-original': attrs.original } : {},
-      },
-      translation: {
-        default: '',
-        parseHTML: (element) => element.getAttribute('data-translation') || '',
-        renderHTML: (attrs) =>
-          attrs.translation ? { 'data-translation': attrs.translation } : {},
+          attrs.isVerse ? { 'data-is-verse': 'true' } : {},
       },
       sourceLabel: {
         default: '',
@@ -57,39 +47,25 @@ const QuoteExtension = Node.create<
         renderHTML: (attrs) =>
           attrs.sourceUrl ? { 'data-source-url': attrs.sourceUrl } : {},
       },
-      quoteType: {
-        default: 'quote',
-        parseHTML: () => 'quote',
-        renderHTML: () => ({ 'data-quote-type': 'quote' }),
-      },
-      styleType: {
-        default: 'verse',
-        parseHTML: (element) => element.getAttribute('data-style') || 'verse',
-        renderHTML: (attrs) =>
-          attrs.styleType ? { 'data-style': attrs.styleType } : {},
-      },
-      autoOpen: {
-        default: false,
-        parseHTML: () => false,
-        renderHTML: () => ({}),
+      customQuote: {
+        default: true,
+        parseHTML: (element) => element.hasAttribute('data-custom-quote'),
+        renderHTML: (attrs) => (attrs.customQuote ? { 'data-custom-quote': true } : {}),
       },
     };
   },
 
   parseHTML() {
-    return [
-      { tag: 'blockquote[data-quote-type="quote"]' },
-      // Backwards compatibility: also parse old quote-with-translation blocks
-      { tag: 'blockquote[data-quote-type="quote-with-translation"]' },
-    ];
+    return [{ tag: 'blockquote[data-custom-quote]' }];
   },
 
   renderHTML({ HTMLAttributes }) {
     return [
       'blockquote',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-quote-type': 'quote',
+        'data-custom-quote': true,
       }),
+      0,
     ];
   },
 

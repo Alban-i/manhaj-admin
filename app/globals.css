@@ -278,3 +278,55 @@
   background-color: var(--primary) !important;
   color: var(--primary-foreground) !important;
 }
+
+/* Center text when verse style is active */
+.quote-content.is-verse {
+  text-align: center;
+}
+
+.quote-content.is-verse p {
+  text-align: center;
+}
+
+/* Verse brackets - inline at start and end of original text only */
+/* For RTL Arabic: ﴿ at start (right), ﴾ at end (left) */
+.quote-content.is-verse p:first-of-type::before {
+  content: ' ﴿';
+  color: var(--primary);
+  font-family: serif;
+  font-size: 1.5em;
+  user-select: none;
+}
+
+.quote-content.is-verse p:last-of-type::after {
+  content: '﴾ ';
+  color: var(--primary);
+  font-family: serif;
+  font-size: 1.5em;
+  user-select: none;
+}
+
+/* Remove brackets from translation paragraphs */
+.quote-content.is-verse [data-quote-translation] p::before,
+.quote-content.is-verse [data-quote-translation] p::after {
+  content: none !important;
+}
+
+/* Center translation when verse style is active */
+.quote-content.is-verse [data-quote-translation],
+.quote-content.is-verse [data-quote-translation] p {
+  text-align: center;
+}
+
+/* Simple blockquote - native HTML styling */
+.tiptap blockquote {
+  background-color: color-mix(in oklch, var(--card) 30%, transparent);
+  padding: 1rem;
+  border-radius: var(--radius);
+  margin: 1.5rem 0;
+  border-left: 4px solid var(--primary);
+}
+
+.tiptap blockquote p {
+  margin: 0;
+}
