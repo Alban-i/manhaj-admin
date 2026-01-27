@@ -19,7 +19,7 @@ const QuoteExtension = Node.create<QuoteOptions, QuoteAttrs>({
   defining: true,
   draggable: true,
   selectable: false,
-  priority: 1001,
+  priority: 100,
 
   addOptions() {
     return {

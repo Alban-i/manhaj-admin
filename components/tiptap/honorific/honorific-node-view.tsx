@@ -1,19 +1,11 @@
 'use client';
 
-import { NodeViewWrapper } from '@tiptap/react';
+import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import { useEffect, useState } from 'react';
 
 const svgCache: Record<string, string> = {};
 
-interface HonorificNodeViewProps {
-  node: {
-    attrs: {
-      honorificType: string;
-    };
-  };
-}
-
-export function HonorificNodeView({ node }: HonorificNodeViewProps) {
+export function HonorificNodeView({ node }: NodeViewProps) {
   const [svg, setSvg] = useState<string | null>(null);
   const type = node.attrs.honorificType;
 

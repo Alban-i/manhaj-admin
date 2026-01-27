@@ -78,6 +78,12 @@ import { GlossaryTermExtension } from './glossary/glossary-term-extension';
 import { GlossarySelectorDialog } from './glossary/glossary-selector-dialog';
 import { ArabicHonorificExtension, HonorificSelectorDialog } from './honorific';
 import { type HonorificType } from '@/lib/honorifics';
+import {
+  SlashCommandExtension,
+  SlashCommandMenu,
+  type SlashCommandState,
+  type SlashCommand,
+} from './slash-command';
 
 interface EditorProps {
   content?: string;
@@ -107,6 +113,7 @@ export default function Editor({
   const [isHonorificSelectorOpen, setIsHonorificSelectorOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [showRawHtml, setShowRawHtml] = useState(false);
+  const [slashCommandState, setSlashCommandState] = useState<SlashCommandState | null>(null);
   const savedCursorPositionRef = useRef<number | null>(null);
   const lastContentRef = useRef<string>(content);
   const isInitializedRef = useRef(false);
@@ -160,6 +167,18 @@ export default function Editor({
       QuoteTranslationExtension,
       GlossaryTermExtension,
       ArabicHonorificExtension,
+      SlashCommandExtension.configure({
+        onStateChange: setSlashCommandState,
+        onOpenGlossary: () => {
+          setIsGlossarySelectorOpen(true);
+        },
+        onOpenPostSelector: () => {
+          // Will be handled by DynamicPostSelectorDialog
+        },
+        onOpenMediaLibrary: () => {
+          setIsMediaLibraryOpen(true);
+        },
+      }),
     ],
     content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
@@ -167,10 +186,10 @@ export default function Editor({
       isInitializedRef.current = true;
     },
     onUpdate: ({ editor }) => {
+      const newContent = editor.getHTML();
+
       // Ignore updates during initialization
       if (!isInitializedRef.current) return;
-
-      const newContent = editor.getHTML();
 
       // Only notify parent if content actually changed
       if (lastContentRef.current !== newContent) {
@@ -900,6 +919,18 @@ export default function Editor({
             editor.chain().focus().insertArabicHonorific(type).run();
           }
         }}
+      />
+
+      {/* Slash Command Menu */}
+      <SlashCommandMenu
+        state={slashCommandState}
+        onCommand={(item: SlashCommand) => {
+          if (slashCommandState?.range) {
+            item.command(editor, slashCommandState.range);
+          }
+          setSlashCommandState(null);
+        }}
+        onClose={() => setSlashCommandState(null)}
       />
     </div>
   );
