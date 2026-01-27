@@ -288,55 +288,6 @@
   color: var(--primary-foreground) !important;
 }
 
-/* Center text when verse style is active */
-.quote-content.is-verse {
-  text-align: center;
-  font-family: 'Uthman', serif;
-}
-
-.quote-content.is-verse p {
-  display: inline;
-  font-family: 'Uthman', serif;
-  font-size: 1.5rem;
-  color: var(--primary);
-}
-
-/* Verse brackets - inline at start and end of original text only */
-/* For RTL Arabic: ﴿ at start (right), ﴾ at end (left) */
-.quote-content.is-verse p:first-of-type::before {
-  content: ' ﴿';
-  color: var(--primary);
-  font-family: inherit;
-  font-size: inherit;
-  user-select: none;
-}
-
-.quote-content.is-verse p:last-of-type::after {
-  content: '﴾ ';
-  color: var(--primary);
-  font-family: inherit;
-  font-size: inherit;
-  user-select: none;
-}
-
-/* Remove brackets from translation paragraphs */
-.quote-content.is-verse [data-quote-translation] p::before,
-.quote-content.is-verse [data-quote-translation] p::after {
-  content: none !important;
-}
-
-/* Center translation when verse style is active */
-.quote-content.is-verse [data-quote-translation] {
-  text-align: center;
-}
-
-.quote-content.is-verse [data-quote-translation] p {
-  display: inline;
-  font-family: inherit;
-  font-size: 1rem;
-  color: var(--muted-foreground);
-}
-
 /* Simple blockquote - native HTML styling */
 .tiptap blockquote {
   background-color: color-mix(in oklch, var(--card) 30%, transparent);
@@ -361,3 +312,18 @@
 .ProseMirror {
   font-family: 'Editor-Latin', var(--font-arabic), 'Scheherazade New', serif;
 }
+
+/* Verse brackets via CSS pseudo-elements on paragraphs */
+.quote-verse p {
+  display: inline;
+  line-height: 1.8;
+}
+
+.quote-verse p:first-of-type::before {
+  content: '﴿ ';
+}
+
+.quote-verse p:last-of-type::after {
+  content: ' ﴾';
+}
+

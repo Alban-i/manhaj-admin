@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NodeViewWrapper, NodeViewContent, NodeViewProps } from '@tiptap/react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -150,13 +151,17 @@ const QuoteNodeView = ({
         </Button>
       </div>
 
-      {/* Editable content - includes paragraphs AND quoteTranslation */}
-      {/* Verse brackets are inline via CSS ::before and ::after */}
-      <NodeViewContent
-        className={`quote-content [&>p]:leading-relaxed [&>p]:m-0 [&>p]:mb-2 outline-none ${
-          isVerse ? 'is-verse' : '[&>p]:text-xl'
-        } ${isVerse && hasTranslation ? 'has-translation' : ''}`}
-      />
+      {/* Editable content - verse brackets added via CSS pseudo-elements */}
+      <div
+        className={cn(
+          'quote-content',
+          isVerse
+            ? 'quote-verse text-2xl text-primary text-center'
+            : '[&>p]:text-xl [&>p]:leading-relaxed [&>p]:m-0 [&>p]:mb-2'
+        )}
+      >
+        <NodeViewContent className="outline-none" />
+      </div>
 
       {/* Source label */}
       {sourceLabel && (
