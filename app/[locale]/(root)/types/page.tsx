@@ -1,22 +1,22 @@
-import { createClient } from '@/providers/supabase/server';
+import { getTypesWithTranslations } from '@/actions/get-types';
+import { getActiveLanguages } from '@/actions/get-languages';
 import TypesClient from './components/types-client';
 
-const TypesPage = async () => {
-  const supabase = await createClient();
+const TypesPage = async ({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) => {
+  const { locale } = await params;
 
-  const { data: types, error } = await supabase
-    .from('types')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching types:', error);
-    return <div className="p-4">Error loading types.</div>;
-  }
+  const [types, languages] = await Promise.all([
+    getTypesWithTranslations(),
+    getActiveLanguages(),
+  ]);
 
   return (
     <div className="">
-      <TypesClient types={types} />
+      <TypesClient types={types} languages={languages} currentLocale={locale} />
     </div>
   );
 };

@@ -283,6 +283,69 @@ export type Database = {
         }
         Relationships: []
       }
+      classification_translations: {
+        Row: {
+          classification_id: number
+          created_at: string | null
+          id: number
+          language: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          classification_id: number
+          created_at?: string | null
+          id?: never
+          language: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          classification_id?: number
+          created_at?: string | null
+          id?: never
+          language?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classification_translations_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "classifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_translations_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      classifications: {
+        Row: {
+          created_at: string | null
+          id: number
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       glossary: {
         Row: {
           created_at: string | null
@@ -1054,9 +1117,54 @@ export type Database = {
           },
         ]
       }
+      type_translations: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          language: string
+          name: string
+          type_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: never
+          language: string
+          name: string
+          type_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: never
+          language?: string
+          name?: string
+          type_id?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "type_translations_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "type_translations_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       types: {
         Row: {
-          classification: string | null
+          classification_id: number
           created_at: string | null
           description: string | null
           id: number
@@ -1065,7 +1173,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          classification?: string | null
+          classification_id: number
           created_at?: string | null
           description?: string | null
           id?: number
@@ -1074,7 +1182,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          classification?: string | null
+          classification_id?: number
           created_at?: string | null
           description?: string | null
           id?: number
@@ -1082,7 +1190,15 @@ export type Database = {
           slug?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "types_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "classifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_messages: {
         Row: {

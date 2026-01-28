@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -12,6 +12,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 
 import DeleteButton from '@/components/delete-btn';
@@ -30,59 +31,117 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
-import type { Classification } from '@/types/types';
+import type {
+  TypeWithTranslations,
+  ClassificationWithTranslations,
+  Language,
+} from '@/types/types';
 import { generateSlug } from '@/lib/utils';
 import { revalidateTypes } from '@/actions/revalidate';
-
-const formSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().min(1),
-  classification: z.enum([
-    'individual',
-    'organization',
-    'institution',
-    'collective',
-  ]),
-});
-
-interface Type {
-  id: number;
-  name: string;
-  description: string;
-  created_at: string;
-  classification: Classification;
-}
+import { upsertTypeTranslations } from '@/actions/upsert-type-translations';
+import { getLanguageWithFlag } from '@/i18n/config';
+import { useTranslations } from 'next-intl';
+import { Badge } from '@/components/ui/badge';
 
 interface TypeFormProps {
-  type: Type | null;
+  type: TypeWithTranslations | null;
+  languages: Language[];
+  classifications: ClassificationWithTranslations[];
 }
 
-const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
-  const defaultValues = type || {
-    name: '',
-    description: '',
-    classification: 'individual',
-  };
-
+const TypeForm: React.FC<TypeFormProps> = ({
+  type,
+  languages,
+  classifications,
+}) => {
+  const t = useTranslations('types');
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
   const router = useRouter();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  // Build dynamic form schema based on active languages
+  const translationSchema: Record<
+    string,
+    z.ZodObject<{ name: z.ZodString; description: z.ZodString }>
+  > = {};
+  languages.forEach((lang) => {
+    // Arabic is required, others are optional
+    if (lang.code === 'ar') {
+      translationSchema[lang.code] = z.object({
+        name: z.string().min(1, t('translationRequired')),
+        description: z.string(),
+      });
+    } else {
+      translationSchema[lang.code] = z.object({
+        name: z.string(),
+        description: z.string(),
+      });
+    }
+  });
+
+  const formSchema = z.object({
+    slug: z.string().min(1, t('slugRequired')),
+    classification_id: z.coerce.number().min(1, t('classificationRequired')),
+    translations: z.object(translationSchema),
+  });
+
+  type FormValues = z.infer<typeof formSchema>;
+
+  // Build default values from existing translations
+  const defaultTranslations: Record<
+    string,
+    { name: string; description: string }
+  > = {};
+  languages.forEach((lang) => {
+    const existing = type?.translations.find((tr) => tr.language === lang.code);
+    defaultTranslations[lang.code] = {
+      name: existing?.name ?? '',
+      description: existing?.description ?? '',
+    };
+  });
+
+  // Get the Arabic translation for display
+  const arabicTranslation = type?.translations.find(
+    (tr) => tr.language === 'ar'
+  );
+  const displayName = arabicTranslation?.name ?? type?.slug ?? t('newType');
+
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: defaultValues.name ?? '',
-      description: defaultValues.description ?? '',
-      classification: defaultValues.classification ?? 'individual',
+      slug: type?.slug ?? '',
+      classification_id: type?.classification_id ?? 0,
+      translations: defaultTranslations,
     },
   });
 
-  // Labels
-  const toastMessage = type ? 'Type updated.' : 'Type created.';
-  const action = type ? 'Save changes' : 'Create';
+  // Auto-generate slug from Arabic name for new types
+  const arabicNameValue = form.watch('translations.ar.name');
+  useEffect(() => {
+    // Only auto-generate slug for new types (when no type exists)
+    if (!type && arabicNameValue) {
+      const generatedSlug = generateSlug(arabicNameValue);
+      form.setValue('slug', generatedSlug);
+    }
+  }, [arabicNameValue, type, form]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  // Labels
+  const toastMessage = type ? t('typeUpdated') : t('typeCreated');
+  const action = type ? t('saveChanges') : t('create');
+
+  // Get localized classification name
+  const getClassificationName = (
+    classification: ClassificationWithTranslations,
+    locale: string = 'ar'
+  ) => {
+    const translation = classification.translations.find(
+      (tr) => tr.language === locale
+    );
+    return translation?.name ?? classification.slug;
+  };
+
+  const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
 
@@ -91,9 +150,8 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
         const { error } = await supabase
           .from('types')
           .update({
-            name: values.name,
-            description: values.description,
-            classification: values.classification,
+            slug: values.slug,
+            classification_id: values.classification_id,
           })
           .eq('id', type.id);
 
@@ -101,15 +159,32 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
           toast.error(error.message);
           return;
         }
+
+        // Update translations
+        const translationData = Object.entries(values.translations)
+          .filter(
+            ([_, data]) => data.name && data.name.trim() !== ''
+          )
+          .map(([language, data]) => ({
+            language,
+            name: data.name.trim(),
+            description: data.description?.trim() || '',
+          }));
+
+        const result = await upsertTypeTranslations(type.id, translationData);
+        if (!result.success) {
+          toast.error(result.error);
+          return;
+        }
       } else {
-        // Create new type
+        // Create new type (slug and classification_id only)
         const { data, error } = await supabase
           .from('types')
           .insert({
-            name: values.name,
-            description: values.description,
-            classification: values.classification,
-            slug: generateSlug(values.name),
+            slug: values.slug,
+            classification_id: values.classification_id,
+            name: values.translations.ar.name, // Required field
+            description: values.translations.ar.description || null,
           })
           .select()
           .single();
@@ -120,6 +195,23 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
         }
 
         if (data) {
+          // Create translations for the new type
+          const translationData = Object.entries(values.translations)
+            .filter(
+              ([_, trData]) => trData.name && trData.name.trim() !== ''
+            )
+            .map(([language, trData]) => ({
+              language,
+              name: trData.name.trim(),
+              description: trData.description?.trim() || '',
+            }));
+
+          const result = await upsertTypeTranslations(data.id, translationData);
+          if (!result.success) {
+            toast.error(result.error);
+            return;
+          }
+
           router.push(`/types/${data.slug}`);
         }
       }
@@ -150,7 +242,7 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
         return;
       }
 
-      toast.success('Type deleted successfully.');
+      toast.success(t('typeDeleted'));
 
       // Revalidate frontend cache
       await revalidateTypes();
@@ -170,88 +262,132 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
             {/* HEADER */}
             <Card>
               <CardHeader className="grid grid-cols-[1fr_auto] items-center gap-4">
-                <CardTitle>{type ? type.name : 'New type'}</CardTitle>
+                <CardTitle>{displayName}</CardTitle>
                 <div className="flex gap-2">
-                  {type && <DeleteButton label="Delete Type" fn={onDelete} />}
+                  {type && (
+                    <DeleteButton label={t('deleteType')} fn={onDelete} />
+                  )}
                   <Button type="submit">{action}</Button>
                 </div>
               </CardHeader>
             </Card>
 
-            {/* DETAILS */}
+            {/* SLUG & CLASSIFICATION */}
             <Card>
               <CardHeader>
-                <CardTitle>Type Details</CardTitle>
+                <CardTitle>{t('typeDetails')}</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Type name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="classification"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Classification</FormLabel>
-                        <FormControl>
-                          <Select
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            disabled={field.disabled}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select classification" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="individual">
-                                Individual
-                              </SelectItem>
-                              <SelectItem value="organization">
-                                Organization
-                              </SelectItem>
-                              <SelectItem value="institution">
-                                Institution
-                              </SelectItem>
-                              <SelectItem value="collective">
-                                Collective
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="description"
+                  name="slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>{t('slug')}</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Type description"
-                          {...field}
-                          rows={4}
-                        />
+                        <Input placeholder={t('slugPlaceholder')} {...field} />
+                      </FormControl>
+                      <FormDescription>{t('slugDescription')}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="classification_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('classification')}</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value ? String(field.value) : ''}
+                          onValueChange={(value) =>
+                            field.onChange(parseInt(value))
+                          }
+                          disabled={field.disabled}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue
+                              placeholder={t('selectClassification')}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classifications.map((classification) => (
+                              <SelectItem
+                                key={classification.id}
+                                value={String(classification.id)}
+                              >
+                                {getClassificationName(classification)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* TRANSLATIONS */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('translations')}</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 gap-6">
+                {languages.map((lang) => (
+                  <div
+                    key={lang.code}
+                    className="border rounded-lg p-4 space-y-4"
+                  >
+                    <div className="flex items-center gap-2 font-medium">
+                      {getLanguageWithFlag(lang.code, lang.name)}
+                      {lang.code === 'ar' && (
+                        <Badge variant="secondary" className="text-xs">
+                          {t('required')}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={`translations.${lang.code}.name`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('name')}</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder={`${t('typeNameIn')} ${lang.name}`}
+                                dir={lang.direction}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`translations.${lang.code}.description`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('description')}</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder={`${t('typeDescriptionIn')} ${lang.name}`}
+                                dir={lang.direction}
+                                rows={3}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </fieldset>

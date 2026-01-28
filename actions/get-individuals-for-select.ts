@@ -12,9 +12,19 @@ export default async function getIndividualsForSelect(): Promise<IndividualOptio
 
   const { data, error } = await supabase
     .from('individuals')
-    .select('id, name, slug, language, type:types!inner(classification)')
+    .select(
+      `
+      id,
+      name,
+      slug,
+      language,
+      type:types!inner(
+        classification:classifications!inner(slug)
+      )
+    `
+    )
     .eq('status', 'published')
-    .eq('type.classification', 'individual')
+    .eq('type.classification.slug', 'individual')
     .order('name', { ascending: true });
 
   if (error) {

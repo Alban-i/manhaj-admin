@@ -46,14 +46,30 @@ export type Tasks = Omit<
   };
 };
 
-export type Classification =
+export type ClassificationSlug =
   | 'individual'
   | 'organization'
   | 'institution'
   | 'collective';
 
-export type Type = Database['public']['Tables']['types']['Row'] & {
-  classification: Classification;
+export type Classification =
+  Database['public']['Tables']['classifications']['Row'];
+
+export type ClassificationTranslation =
+  Database['public']['Tables']['classification_translations']['Row'];
+
+export type ClassificationWithTranslations = Classification & {
+  translations: ClassificationTranslation[];
+};
+
+export type TypeTranslation =
+  Database['public']['Tables']['type_translations']['Row'];
+
+export type Type = Database['public']['Tables']['types']['Row'];
+
+export type TypeWithTranslations = Type & {
+  translations: TypeTranslation[];
+  classification: ClassificationWithTranslations;
 };
 
 export type Timeline = Database['public']['Tables']['timelines']['Row'];

@@ -409,6 +409,12 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         return; // Exit early - the new page will load fresh
       }
 
+      // Redirect if slug changed, otherwise just refresh
+      if (defaultValues.slug !== data.slug) {
+        router.push(`/articles/${data.slug}`);
+        return;
+      }
+
       router.refresh();
     } catch (err) {
       toast.error(t('somethingWentWrong'));

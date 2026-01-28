@@ -40,7 +40,7 @@ import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
 import ImageUpload from '@/components/image-upload';
 import { revalidatePosts } from '@/actions/revalidate';
-import { Globe, Plus, ExternalLink, FileEdit, Archive } from 'lucide-react';
+import { Globe, Plus, Star, FileEdit, Archive } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { getLanguageWithFlag } from '@/i18n/config';
@@ -93,7 +93,9 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<string>(post?.content || '');
   const initialContentRef = useRef<string>(post?.content || '');
-  const [contentJson, setContentJson] = useState<Json | null>(null);
+  const [contentJson, setContentJson] = useState<Json | null>(
+    post?.content_json ?? null
+  );
   type FormStatus = 'draft' | 'published' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
     (post?.status?.toLowerCase() as FormStatus) ?? 'draft'
@@ -183,6 +185,12 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
 
         // Revalidate frontend cache
         await revalidatePosts();
+
+        // Redirect if slug changed
+        if (post.slug !== values.slug) {
+          router.push(`/posts/${values.slug}`);
+          return;
+        }
       } else {
         // Create new post
         const { data, error } = await supabase
@@ -460,26 +468,6 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="is_original"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-2 space-y-0 border rounded-md p-2 col-span-2">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Mark as original</FormLabel>
-                          <FormDescription>
-                            This is the source post for all translations in this group
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
                 </CardContent>
               </Card>
             </div>
@@ -518,107 +506,118 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, language
                 </CardContent>
               </Card>
 
-              {/* TRANSLATIONS */}
-              {defaultValues.id && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Globe className="h-5 w-5" />
-                      Translations
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Existing translations */}
-                    {translations.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                          Available translations:
-                        </p>
+            </div>
+
+            {/* TRANSLATIONS - Full Width */}
+            {defaultValues.id && (
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5" />
+                    Translations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-[1fr_auto] gap-4 items-start">
+                    {/* Left column - Translations */}
+                    <div className="space-y-4">
+                      {/* Existing translations */}
+                      {translations.length > 0 && (
                         <div className="space-y-2">
-                          {translations.map((translation) => {
-                            const lang = languages.find(
-                              (l) => l.code === translation.language
-                            );
-                            const isCurrent = translation.id === defaultValues.id;
-                            const displayName = getLanguageWithFlag(
-                              translation.language,
-                              lang?.native_name || translation.language.toUpperCase()
-                            );
-                            return (
-                              <div
-                                key={translation.id}
-                                className={`flex items-center justify-between p-2 rounded-md border ${
-                                  isCurrent ? 'bg-muted' : 'bg-background'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Available translations:</span>
+                          <div className="flex flex-wrap items-center gap-2 p-3 rounded-md border bg-muted/50">
+                            {translations.map((translation) => {
+                              const lang = languages.find(
+                                (l) => l.code === translation.language
+                              );
+                              const isCurrent = translation.id === defaultValues.id;
+                              const displayName = getLanguageWithFlag(
+                                translation.language,
+                                lang?.native_name || translation.language.toUpperCase()
+                              );
+                              return isCurrent ? (
+                                <Badge
+                                  key={translation.id}
+                                  variant="default"
+                                  className="text-xs gap-1 cursor-default py-1.5 px-3"
+                                >
+                                  {translation.is_original && <Star className="h-3 w-3 fill-current" />}
+                                  {displayName}
+                                </Badge>
+                              ) : (
+                                <Link key={translation.id} href={`/posts/${translation.slug}`}>
                                   <Badge
-                                    variant={isCurrent ? 'default' : 'outline'}
-                                    className="text-xs"
+                                    variant="outline"
+                                    className="text-xs gap-1 cursor-pointer hover:bg-background py-1.5 px-3"
                                   >
+                                    {translation.is_original && <Star className="h-3 w-3 fill-current" />}
                                     {displayName}
                                   </Badge>
-                                  {translation.is_original && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      Original
-                                    </Badge>
-                                  )}
-                                  <span className="text-sm truncate max-w-[120px]">
-                                    {translation.title}
-                                  </span>
-                                </div>
-                                {!isCurrent && (
-                                  <Link href={`/posts/${translation.slug}`}>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      type="button"
-                                    >
-                                      <ExternalLink className="h-4 w-4" />
-                                    </Button>
-                                  </Link>
-                                )}
-                              </div>
-                            );
-                          })}
+                                </Link>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )}
-
-                    {/* Create new translation */}
-                    {availableLanguagesForTranslation.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                          Create translation:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {availableLanguagesForTranslation.map((lang) => (
-                            <Button
-                              key={lang.code}
-                              variant="outline"
-                              size="sm"
-                              type="button"
-                              onClick={() => createTranslation(lang.code)}
-                              className="gap-1"
-                            >
-                              <Plus className="h-3 w-3" />
-                              {getLanguageWithFlag(lang.code, lang.native_name)}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {translations.length === 0 &&
-                      availableLanguagesForTranslation.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                          No translations available.
-                        </p>
                       )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+
+                      {/* Create new translation */}
+                      {availableLanguagesForTranslation.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">Add translation:</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {availableLanguagesForTranslation.map((lang) => (
+                              <Button
+                                key={lang.code}
+                                variant="outline"
+                                size="sm"
+                                type="button"
+                                onClick={() => createTranslation(lang.code)}
+                                className="gap-1 h-8"
+                              >
+                                <Plus className="h-3 w-3" />
+                                {getLanguageWithFlag(lang.code, lang.native_name)}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {translations.length === 0 &&
+                        availableLanguagesForTranslation.length === 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            No translations available.
+                          </p>
+                        )}
+                    </div>
+
+                    {/* Right column - Mark as original */}
+                    <div className="space-y-2">
+                      <span className="text-sm text-muted-foreground">Original status:</span>
+                      <FormField
+                        control={form.control}
+                        name="is_original"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-2 space-y-0 border rounded-md p-3 bg-muted/50">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Mark as original</FormLabel>
+                              <FormDescription>
+                                Source post for translations
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Full Width Content Card */}
             <Card className="md:col-span-2">

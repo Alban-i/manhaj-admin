@@ -122,6 +122,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: Users,
           url: '/types',
         },
+        {
+          title: t('classifications'),
+          icon: Tag,
+          url: '/classifications',
+        },
       ],
     },
     {
