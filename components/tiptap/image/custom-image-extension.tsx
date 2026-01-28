@@ -5,6 +5,7 @@ import { mergeAttributes, CommandProps } from '@tiptap/core';
 import ImageNodeView from './image-node-view';
 
 interface ImageAttributes {
+  src?: string | null;
   mediaId?: string | null;
   width?: string | null;
   height?: string | null;
@@ -32,10 +33,15 @@ const CustomImageExtension = Image.extend({
   },
 
   addAttributes() {
-    const parentAttributes = {};
-
     return {
-      ...parentAttributes,
+      src: {
+        default: null,
+        renderHTML: (attributes: ImageAttributes) => {
+          if (!attributes.src) return {};
+          return { src: attributes.src };
+        },
+        parseHTML: (element: HTMLElement) => element.getAttribute('src'),
+      },
       mediaId: {
         default: null,
         renderHTML: (attributes: ImageAttributes) => {
