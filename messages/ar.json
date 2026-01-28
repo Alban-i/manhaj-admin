@@ -165,7 +165,15 @@
     "summaryGenerated": "تم إنشاء الملخص بنجاح",
     "summaryFailed": "فشل في إنشاء الملخص",
     "authorRequired": "الكاتب مطلوب",
-    "languageRequired": "اللغة مطلوبة"
+    "languageRequired": "اللغة مطلوبة",
+    "translators": "المترجمون",
+    "translatorsDescription": "من قام بترجمة هذا المقال (خاص بالمقال، غير مشترك بين الترجمات)",
+    "selectTranslators": "اختر المترجمين",
+    "searchTranslator": "البحث عن مترجم...",
+    "noTranslatorFound": "لم يتم العثور على مترجم.",
+    "translatorsSelected": "مترجم(ين) محدد",
+    "failedToRemoveTranslators": "فشل في إزالة المترجمين",
+    "failedToAddTranslators": "فشل في إضافة المترجمين"
   },
   "posts": {
     "title": "المنشورات",
@@ -199,5 +207,30 @@
     "characters": "حرف",
     "showRawHtml": "عرض HTML الخام",
     "selectMedia": "اختيار وسائط"
+  },
+  "tags": {
+    "title": "الوسوم",
+    "newTag": "وسم جديد",
+    "deleteTag": "حذف الوسم",
+    "translations": "الترجمات",
+    "translationRequired": "الترجمة مطلوبة",
+    "noTranslation": "لا توجد ترجمة",
+    "tagUpdated": "تم تحديث الوسم.",
+    "tagCreated": "تم إنشاء الوسم.",
+    "tagDeleted": "تم حذف الوسم بنجاح.",
+    "saveChanges": "حفظ التغييرات",
+    "create": "إنشاء",
+    "required": "مطلوب",
+    "tagNameIn": "اسم الوسم بـ",
+    "listOfTags": "قائمة الوسوم",
+    "listDescription": "قائمة الوسوم الخاصة بك",
+    "searchPlaceholder": "البحث عن وسوم...",
+    "name": "الاسم",
+    "createdAt": "تاريخ الإنشاء",
+    "new": "جديد",
+    "slug": "الرابط المختصر",
+    "slugRequired": "الرابط المختصر مطلوب",
+    "slugPlaceholder": "رابط-الوسم",
+    "slugDescription": "معرّف مناسب للرابط لهذا الوسم"
   }
 }

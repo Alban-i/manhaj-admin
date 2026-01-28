@@ -165,7 +165,15 @@
     "summaryGenerated": "Summary generated successfully",
     "summaryFailed": "Failed to generate summary",
     "authorRequired": "Author is required",
-    "languageRequired": "Language is required"
+    "languageRequired": "Language is required",
+    "translators": "Translators",
+    "translatorsDescription": "Who translated this article (article-specific, not shared across translations)",
+    "selectTranslators": "Select translators",
+    "searchTranslator": "Search translator...",
+    "noTranslatorFound": "No translator found.",
+    "translatorsSelected": "translator(s) selected",
+    "failedToRemoveTranslators": "Failed to remove translators",
+    "failedToAddTranslators": "Failed to add translators"
   },
   "posts": {
     "title": "Posts",
@@ -199,5 +207,30 @@
     "characters": "characters",
     "showRawHtml": "Show Raw HTML",
     "selectMedia": "Select Media"
+  },
+  "tags": {
+    "title": "Tags",
+    "newTag": "New Tag",
+    "deleteTag": "Delete Tag",
+    "translations": "Translations",
+    "translationRequired": "Translation is required",
+    "noTranslation": "No translation",
+    "tagUpdated": "Tag updated.",
+    "tagCreated": "Tag created.",
+    "tagDeleted": "Tag deleted successfully.",
+    "saveChanges": "Save changes",
+    "create": "Create",
+    "required": "Required",
+    "tagNameIn": "Tag name in",
+    "listOfTags": "List of tags",
+    "listDescription": "Your list of tags",
+    "searchPlaceholder": "Search tags...",
+    "name": "Name",
+    "createdAt": "Created At",
+    "new": "New",
+    "slug": "Slug",
+    "slugRequired": "Slug is required",
+    "slugPlaceholder": "tag-slug",
+    "slugDescription": "URL-friendly identifier for this tag"
   }
 }

@@ -83,6 +83,42 @@ export type Database = {
           },
         ]
       }
+      article_translators: {
+        Row: {
+          article_id: string
+          created_at: string | null
+          display_order: number | null
+          individual_id: number
+        }
+        Insert: {
+          article_id: string
+          created_at?: string | null
+          display_order?: number | null
+          individual_id: number
+        }
+        Update: {
+          article_id?: string
+          created_at?: string | null
+          display_order?: number | null
+          individual_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_translators_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_translators_individual_id_fkey"
+            columns: ["individual_id"]
+            isOneToOne: false
+            referencedRelation: "individuals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_view_tracking: {
         Row: {
           article_id: string
@@ -704,25 +740,64 @@ export type Database = {
         }
         Relationships: []
       }
+      tag_translations: {
+        Row: {
+          created_at: string | null
+          id: number
+          language: string
+          name: string
+          tag_id: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: never
+          language: string
+          name: string
+          tag_id: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: never
+          language?: string
+          name?: string
+          tag_id?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tag_translations_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "tag_translations_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           created_at: string
           id: number
-          name: string
           slug: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: never
-          name: string
           slug: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: never
-          name?: string
           slug?: string
           updated_at?: string
         }

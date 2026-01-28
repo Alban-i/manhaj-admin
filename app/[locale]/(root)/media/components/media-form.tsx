@@ -165,7 +165,6 @@ export const MediaForm: React.FC<MediaFormProps> = ({
       cover_image_url: data.cover_image_url,
     }, {
       onSuccess: () => {
-        toast.success('Media updated successfully');
         onUpdate?.();
       },
       onError: () => {

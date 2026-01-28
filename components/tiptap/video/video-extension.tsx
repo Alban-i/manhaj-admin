@@ -25,6 +25,7 @@ export const CustomVideoExtension = TipTapNode.create<VideoOptions>({
 
   addAttributes() {
     return {
+      mediaId: { default: null },
       src: { default: null },
       title: { default: null },
       poster: { default: null },
@@ -32,7 +33,18 @@ export const CustomVideoExtension = TipTapNode.create<VideoOptions>({
   },
 
   parseHTML() {
-    return [{ tag: 'video[data-video]' }];
+    return [{
+      tag: 'video[data-video]',
+      getAttrs: (dom) => {
+        const element = dom as HTMLElement;
+        return {
+          mediaId: element.getAttribute('data-media-id'),
+          src: element.getAttribute('src'),
+          title: element.getAttribute('title'),
+          poster: element.getAttribute('poster'),
+        };
+      },
+    }];
   },
 
   renderHTML({ node, HTMLAttributes }: { node: Node; HTMLAttributes: Record<string, unknown> }) {
@@ -40,6 +52,7 @@ export const CustomVideoExtension = TipTapNode.create<VideoOptions>({
       'video',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-video': true,
+        'data-media-id': node.attrs.mediaId,
         src: node.attrs.src,
         title: node.attrs.title,
         poster: node.attrs.poster,
@@ -52,7 +65,7 @@ export const CustomVideoExtension = TipTapNode.create<VideoOptions>({
   addCommands() {
     return {
       setVideo:
-        (options: { src?: string; title?: string; poster?: string }) =>
+        (options: { mediaId?: string; src?: string; title?: string; poster?: string }) =>
         ({ chain, state }: CommandProps) => {
           const { selection } = state;
           const position = selection.$anchor.pos;

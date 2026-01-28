@@ -29,6 +29,13 @@ export type ProfilesWithRoles = Profiles & {
 
 export type Tags = Database['public']['Tables']['tags']['Row'];
 
+export type TagTranslation =
+  Database['public']['Tables']['tag_translations']['Row'];
+
+export type TagWithTranslations = Tags & {
+  translations: TagTranslation[];
+};
+
 export type Tasks = Omit<
   Database['public']['Tables']['tasks']['Row'],
   'owner_id'

@@ -349,6 +349,7 @@ export default function Editor({
       savedCursorPositionRef.current = null;
 
       // Insert different types of media based on their type
+      // Store mediaId for database reference, src for backwards compatibility
       switch (media.media_type) {
         case 'audio':
           editor
@@ -357,8 +358,8 @@ export default function Editor({
             .insertContentAt(position, {
               type: 'audio',
               attrs: {
+                mediaId: media.id,
                 src: media.url,
-                title: media.original_name,
               },
             })
             .run();
@@ -370,9 +371,9 @@ export default function Editor({
             .insertContentAt(position, {
               type: 'customImage',
               attrs: {
+                mediaId: media.id,
                 src: media.url,
-                alt: media.alt_text || media.original_name,
-                title: media.original_name,
+                alignment: 'center',
               },
             })
             .run();
@@ -384,8 +385,8 @@ export default function Editor({
             .insertContentAt(position, {
               type: 'video',
               attrs: {
+                mediaId: media.id,
                 src: media.url,
-                title: media.original_name,
               },
             })
             .run();
@@ -397,9 +398,8 @@ export default function Editor({
             .insertContentAt(position, {
               type: 'customDocument',
               attrs: {
+                mediaId: media.id,
                 src: media.url,
-                title: media.original_name,
-                fileType: media.original_name?.split('.').pop()?.toUpperCase(),
               },
             })
             .run();

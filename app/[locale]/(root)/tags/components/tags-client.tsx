@@ -17,34 +17,72 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tags } from '@/types/types';
+import { TagWithTranslations, Language } from '@/types/types';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { localeFlags } from '@/i18n/config';
+import { useTranslations } from 'next-intl';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface TagsClientProps {
-  tags: Tags[];
+  tags: TagWithTranslations[];
+  languages: Language[];
+  currentLocale: string;
 }
 
-const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
+const TagsClient: React.FC<TagsClientProps> = ({
+  tags,
+  languages,
+  currentLocale,
+}) => {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  const t = useTranslations('tags');
 
-  const filteredTags = tags.filter((tag) =>
-    tag.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Get Arabic name for a tag (primary display name)
+  const getArabicName = (tag: TagWithTranslations) => {
+    const arabicTranslation = tag.translations.find((tr) => tr.language === 'ar');
+    return arabicTranslation?.name ?? tag.slug;
+  };
+
+  // Get localized name for a tag
+  const getLocalizedName = (tag: TagWithTranslations) => {
+    const translation = tag.translations.find(
+      (tr) => tr.language === currentLocale
+    );
+    const arabicTranslation = tag.translations.find((tr) => tr.language === 'ar');
+    return translation?.name ?? arabicTranslation?.name ?? tag.slug;
+  };
+
+  const filteredTags = tags.filter((tag) => {
+    const arabicName = getArabicName(tag);
+    return arabicName?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  // Check if a translation exists and is different from the default
+  const hasTranslation = (tag: TagWithTranslations, langCode: string) => {
+    const translation = tag.translations.find((tr) => tr.language === langCode);
+    return translation && translation.name && translation.name.trim() !== '';
+  };
 
   return (
     <div className="grid gap-3 px-4">
       {/* TOP FIRST LINE */}
       <div className="flex items-center gap-4">
-        <h2 className="text-2xl font-bold">Tags</h2>
+        <h2 className="text-2xl font-bold">{t('title')}</h2>
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => router.push('/tags/new')} className="gap-1">
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              New
+              {t('new')}
             </span>
           </Button>
         </div>
@@ -54,13 +92,13 @@ const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
       <Card>
         <CardHeader className="grid grid-cols-[1fr_auto] gap-2">
           <div className="flex flex-col items-start gap-2">
-            <CardTitle>List of tags</CardTitle>
-            <CardDescription>Your list of tags</CardDescription>
+            <CardTitle>{t('listOfTags')}</CardTitle>
+            <CardDescription>{t('listDescription')}</CardDescription>
           </div>
 
           <Input
             type="text"
-            placeholder="Search tags..."
+            placeholder={t('searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border p-2 rounded w-[300px]"
@@ -70,8 +108,9 @@ const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Created At</TableHead>
+                <TableHead>{t('name')}</TableHead>
+                <TableHead>{t('translations')}</TableHead>
+                <TableHead>{t('createdAt')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -81,7 +120,40 @@ const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
                   className={cn('cursor-pointer hover:bg-secondary/50')}
                   onClick={() => router.push(`/tags/${tag.slug}`)}
                 >
-                  <TableCell>{tag.name}</TableCell>
+                  <TableCell>{getLocalizedName(tag)}</TableCell>
+                  <TableCell>
+                    <TooltipProvider>
+                      <div className="flex gap-1">
+                        {languages.map((lang) => (
+                          <Tooltip key={lang.code}>
+                            <TooltipTrigger asChild>
+                              <Badge
+                                variant={
+                                  hasTranslation(tag, lang.code)
+                                    ? 'default'
+                                    : 'outline'
+                                }
+                                className={cn(
+                                  'text-xs cursor-default',
+                                  !hasTranslation(tag, lang.code) &&
+                                    'opacity-40'
+                                )}
+                              >
+                                {localeFlags[lang.code] ?? lang.code}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {hasTranslation(tag, lang.code)
+                                ? tag.translations.find(
+                                    (tr) => tr.language === lang.code
+                                  )?.name
+                                : t('noTranslation')}
+                            </TooltipContent>
+                          </Tooltip>
+                        ))}
+                      </div>
+                    </TooltipProvider>
+                  </TableCell>
                   <TableCell>
                     {tag.created_at
                       ? new Date(tag.created_at).toLocaleString('en-GB', {

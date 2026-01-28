@@ -82,6 +82,7 @@ const initialData = {
   title: '',
   summary: '',
   content: '',
+  content_json: null,
   slug: '',
   status: 'draft',
   category_id: null,
@@ -115,11 +116,20 @@ const formSchema = z.object({
   event_date_gregorian: z.string().optional(),
 });
 
+interface TagWithLocalizedName {
+  id: number;
+  slug: string;
+  created_at: string;
+  updated_at: string;
+  localizedName: string;
+}
+
 interface ArticleFormProps {
   article: (Omit<Articles, 'is_published'> & { id?: string; individual_id?: number | null }) | null;
   categories: { id: number; name: string }[];
-  tags: { id: number; name: string; created_at: string; updated_at: string }[];
+  tags: TagWithLocalizedName[];
   selectedTagIds: number[];
+  selectedTranslatorIds: number[];
   authors: ProfilesWithRoles[];
   languages: Language[];
   translations: ArticleTranslation[];
@@ -131,6 +141,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   categories,
   tags,
   selectedTagIds,
+  selectedTranslatorIds,
   authors,
   languages,
   translations,
@@ -140,11 +151,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const defaultValues = article ?? { ...initialData, is_featured: false };
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
   const initialContentRef = useRef<string>(defaultValues.content ?? '');
-  const [contentJson, setContentJson] = useState<Json | null>(null);
+  const [contentJson, setContentJson] = useState<Json | null>(defaultValues.content_json ?? null);
   const [loading, setLoading] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [selectedTags, setSelectedTags] = useState<number[]>(selectedTagIds);
+  const [selectedTranslators, setSelectedTranslators] = useState<number[]>(selectedTranslatorIds);
   const [individualOpen, setIndividualOpen] = useState(false);
+  const [translatorOpen, setTranslatorOpen] = useState(false);
   type FormStatus = 'draft' | 'published' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
     (defaultValues.status?.toLowerCase() as FormStatus) ?? 'draft'
@@ -328,6 +341,44 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         if (insertError) {
           toast.error(t('failedToAddTags'));
           console.error('Error adding tags:', insertError);
+        }
+      }
+
+      // Sync translators for article (article-level, not translation_group)
+      const translatorsToAdd = selectedTranslators.filter(
+        (id) => !selectedTranslatorIds.includes(id)
+      );
+      const translatorsToRemove = selectedTranslatorIds.filter(
+        (id) => !selectedTranslators.includes(id)
+      );
+
+      if (translatorsToRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('article_translators')
+          .delete()
+          .eq('article_id', data.id)
+          .in('individual_id', translatorsToRemove);
+
+        if (deleteError) {
+          toast.error(t('failedToRemoveTranslators'));
+          console.error('Error removing translators:', deleteError);
+        }
+      }
+
+      if (translatorsToAdd.length > 0) {
+        const translatorData = translatorsToAdd.map((individualId, index) => ({
+          article_id: data.id,
+          individual_id: individualId,
+          display_order: selectedTranslators.indexOf(individualId),
+        }));
+
+        const { error: insertError } = await supabase
+          .from('article_translators')
+          .upsert(translatorData, { onConflict: 'article_id,individual_id' });
+
+        if (insertError) {
+          toast.error(t('failedToAddTranslators'));
+          console.error('Error adding translators:', insertError);
         }
       }
 
@@ -762,7 +813,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                           type="button"
                           onClick={() => toggleTag(tag.id)}
                         >
-                          {tag.name}
+                          {tag.localizedName}
                         </Button>
                       ))}
                     </div>
@@ -1014,6 +1065,88 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       </FormItem>
                     )}
                   />
+                </div>
+
+                <Separator />
+
+                {/* Translators */}
+                <div className="space-y-2">
+                  <FormLabel>{t('translators')}</FormLabel>
+                  <FormDescription>
+                    {t('translatorsDescription')}
+                  </FormDescription>
+                  <Popover open={translatorOpen} onOpenChange={setTranslatorOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          selectedTranslators.length === 0 && "text-muted-foreground"
+                        )}
+                      >
+                        {selectedTranslators.length > 0
+                          ? `${selectedTranslators.length} ${t('translatorsSelected')}`
+                          : t('selectTranslators')}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder={t('searchTranslator')} />
+                        <CommandList>
+                          <CommandEmpty>{t('noTranslatorFound')}</CommandEmpty>
+                          <CommandGroup>
+                            {individuals.map((individual) => (
+                              <CommandItem
+                                key={individual.id}
+                                value={individual.name}
+                                onSelect={() => {
+                                  setSelectedTranslators((prev) =>
+                                    prev.includes(individual.id)
+                                      ? prev.filter((id) => id !== individual.id)
+                                      : [...prev, individual.id]
+                                  );
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedTranslators.includes(individual.id)
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {individual.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {selectedTranslators.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {selectedTranslators.map((translatorId) => {
+                        const translator = individuals.find((i) => i.id === translatorId);
+                        return translator ? (
+                          <Badge
+                            key={translatorId}
+                            variant="secondary"
+                            className="cursor-pointer"
+                            onClick={() =>
+                              setSelectedTranslators((prev) =>
+                                prev.filter((id) => id !== translatorId)
+                              )
+                            }
+                          >
+                            {translator.name}
+                            <span className="ml-1 text-muted-foreground hover:text-foreground">×</span>
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

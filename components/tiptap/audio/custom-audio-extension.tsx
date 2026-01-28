@@ -25,8 +25,10 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
 
   addAttributes() {
     return {
+      mediaId: { default: null },
       src: { default: null },
       title: { default: null },
+      transcription: { default: null },
     };
   },
 
@@ -37,8 +39,10 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
         getAttrs: (dom) => {
           const element = dom as HTMLElement;
           return {
+            mediaId: element.getAttribute('data-media-id'),
             src: element.getAttribute('src'),
             title: element.getAttribute('title'),
+            transcription: element.getAttribute('data-transcription'),
           };
         },
       },
@@ -50,8 +54,10 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
       'audio',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-audio': true,
+        'data-media-id': node.attrs.mediaId,
         src: node.attrs.src,
         title: node.attrs.title,
+        'data-transcription': node.attrs.transcription,
       }),
     ];
   },

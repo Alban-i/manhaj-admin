@@ -5,6 +5,7 @@ import { mergeAttributes, CommandProps } from '@tiptap/core';
 import ImageNodeView from './image-node-view';
 
 interface ImageAttributes {
+  mediaId?: string | null;
   width?: string | null;
   height?: string | null;
   alt?: string | null;
@@ -35,6 +36,14 @@ const CustomImageExtension = Image.extend({
 
     return {
       ...parentAttributes,
+      mediaId: {
+        default: null,
+        renderHTML: (attributes: ImageAttributes) => {
+          if (!attributes.mediaId) return {};
+          return { 'data-media-id': attributes.mediaId };
+        },
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-media-id') || null,
+      },
       width: {
         default: null,
         renderHTML: (attributes: ImageAttributes) => {
@@ -132,7 +141,7 @@ const CustomImageExtension = Image.extend({
   },
 
   renderHTML({ node, HTMLAttributes }: { node: { attrs: Record<string, unknown> }; HTMLAttributes: Record<string, unknown> }) {
-    const { src, alt, title, width, height, alignment } = node.attrs as unknown as ImageAttributes & { src: string };
+    const { mediaId, src, alt, title, width, height, alignment } = node.attrs as unknown as ImageAttributes & { src: string };
     const margin =
       alignment === 'left'
         ? '0 auto 0 0'
@@ -141,6 +150,7 @@ const CustomImageExtension = Image.extend({
         : '0 auto';
 
     const imgAttrs = mergeAttributes(HTMLAttributes, {
+      'data-media-id': mediaId,
       src,
       alt,
       title,

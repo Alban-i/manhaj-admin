@@ -165,7 +165,15 @@
     "summaryGenerated": "Résumé généré avec succès",
     "summaryFailed": "Échec de la génération du résumé",
     "authorRequired": "L'auteur est requis",
-    "languageRequired": "La langue est requise"
+    "languageRequired": "La langue est requise",
+    "translators": "Traducteurs",
+    "translatorsDescription": "Qui a traduit cet article (spécifique à l'article, non partagé entre les traductions)",
+    "selectTranslators": "Sélectionner les traducteurs",
+    "searchTranslator": "Rechercher un traducteur...",
+    "noTranslatorFound": "Aucun traducteur trouvé.",
+    "translatorsSelected": "traducteur(s) sélectionné(s)",
+    "failedToRemoveTranslators": "Échec de la suppression des traducteurs",
+    "failedToAddTranslators": "Échec de l'ajout des traducteurs"
   },
   "posts": {
     "title": "Publications",
@@ -199,5 +207,30 @@
     "characters": "caractères",
     "showRawHtml": "Afficher le HTML brut",
     "selectMedia": "Sélectionner un média"
+  },
+  "tags": {
+    "title": "Tags",
+    "newTag": "Nouveau tag",
+    "deleteTag": "Supprimer le tag",
+    "translations": "Traductions",
+    "translationRequired": "La traduction est requise",
+    "noTranslation": "Pas de traduction",
+    "tagUpdated": "Tag mis à jour.",
+    "tagCreated": "Tag créé.",
+    "tagDeleted": "Tag supprimé avec succès.",
+    "saveChanges": "Enregistrer les modifications",
+    "create": "Créer",
+    "required": "Requis",
+    "tagNameIn": "Nom du tag en",
+    "listOfTags": "Liste des tags",
+    "listDescription": "Votre liste de tags",
+    "searchPlaceholder": "Rechercher des tags...",
+    "name": "Nom",
+    "createdAt": "Créé le",
+    "new": "Nouveau",
+    "slug": "Slug",
+    "slugRequired": "Le slug est requis",
+    "slugPlaceholder": "slug-du-tag",
+    "slugDescription": "Identifiant URL-friendly pour ce tag"
   }
 }

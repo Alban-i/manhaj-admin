@@ -25,22 +25,27 @@ export const CustomDocumentExtension = TipTapNode.create<DocumentOptions>({
 
   addAttributes() {
     return {
-      src: { 
+      mediaId: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-media-id'),
+        renderHTML: () => ({}),
+      },
+      src: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('data-src'),
         renderHTML: () => ({}),
       },
-      title: { 
+      title: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('data-title'),
         renderHTML: () => ({}),
       },
-      fileType: { 
+      fileType: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('data-file-type'),
         renderHTML: () => ({}),
       },
-      fileSize: { 
+      fileSize: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('data-file-size'),
         renderHTML: () => ({}),
@@ -57,6 +62,7 @@ export const CustomDocumentExtension = TipTapNode.create<DocumentOptions>({
       'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-document': true,
+        'data-media-id': node.attrs.mediaId,
         'data-src': node.attrs.src,
         'data-title': node.attrs.title,
         'data-file-type': node.attrs.fileType,
@@ -68,7 +74,7 @@ export const CustomDocumentExtension = TipTapNode.create<DocumentOptions>({
   addCommands() {
     return {
       setDocument:
-        (options: { src?: string; title?: string; fileType?: string; fileSize?: string }) =>
+        (options: { mediaId?: string; src?: string; title?: string; fileType?: string; fileSize?: string }) =>
         ({ chain, state }: CommandProps) => {
           const { selection } = state;
           const position = selection.$anchor.pos;

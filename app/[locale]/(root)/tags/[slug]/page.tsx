@@ -1,4 +1,6 @@
 import { getTagById } from '@/actions/get-tags';
+import { getTagTranslations } from '@/actions/get-tag-translations';
+import { getActiveLanguages } from '@/actions/get-languages';
 import TagForm from './components/tag-form';
 
 const TagContentPage = async ({
@@ -8,11 +10,14 @@ const TagContentPage = async ({
 }) => {
   const { slug } = await params;
 
+  // Fetch active languages for the form
+  const languages = await getActiveLanguages();
+
   // If slug is 'new', return empty tag
   if (slug === 'new') {
     return (
       <div className="">
-        <TagForm tag={null} />
+        <TagForm tag={null} languages={languages} />
       </div>
     );
   }
@@ -24,9 +29,12 @@ const TagContentPage = async ({
     return <div className="px-4">No tag found.</div>;
   }
 
+  // Fetch translations for existing tag
+  const translations = await getTagTranslations(tag.id);
+
   return (
     <div className="">
-      <TagForm tag={tag} />
+      <TagForm tag={tag} translations={translations} languages={languages} />
     </div>
   );
 };

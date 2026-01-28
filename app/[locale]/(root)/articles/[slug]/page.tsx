@@ -1,10 +1,11 @@
 import getArticle from '@/actions/get-article';
 import getArticleTags from '@/actions/get-article-tags';
+import getArticleTranslators from '@/actions/get-article-translators';
 import getArticleTranslations from '@/actions/get-article-translations';
 import getAuthors from '@/actions/get-authors';
 import getCategories from '@/actions/get-categories';
 import { getActiveLanguages } from '@/actions/get-languages';
-import getTags from '@/actions/get-tags';
+import { getTagsWithTranslations } from '@/actions/get-tags';
 import getTranslationGroup from '@/actions/get-translation-group';
 import getIndividualsForSelect from '@/actions/get-individuals-for-select';
 import ArticleForm from './components/article-form';
@@ -13,17 +14,18 @@ const ArticlePage = async ({
   params,
   searchParams,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const query = await searchParams;
 
-  const [article, categories, tags, articleTags, authors, languages, individuals] = await Promise.all([
+  const [article, categories, tags, articleTags, articleTranslators, authors, languages, individuals] = await Promise.all([
     getArticle(slug),
     getCategories(),
-    getTags(),
+    getTagsWithTranslations(locale),
     getArticleTags(slug),
+    getArticleTranslators(slug),
     getAuthors(),
     getActiveLanguages(),
     getIndividualsForSelect(),
@@ -82,6 +84,7 @@ const ArticlePage = async ({
         categories={categories}
         tags={tags}
         selectedTagIds={selectedTags}
+        selectedTranslatorIds={article ? articleTranslators : []}
         authors={authors}
         languages={languages}
         translations={translations}
