@@ -23,8 +23,13 @@ export const addArticleMedia = async (
       });
 
     if (error) {
+      // PostgreSQL error code 23505 = unique_violation (duplicate key)
+      if (error.code === '23505') {
+        // Relationship already exists - treat as success
+        return { success: true };
+      }
       console.error('Error adding article-media relationship:', error);
-      return { success: false, error: 'Failed to add media relationship' };
+      return { success: false, error: error.message || 'Failed to add media relationship' };
     }
 
     return { success: true };

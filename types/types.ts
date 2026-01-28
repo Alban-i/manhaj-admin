@@ -77,3 +77,6 @@ export type Timeline = Database['public']['Tables']['timelines']['Row'];
 export type TimelineArticle = Database['public']['Tables']['timeline_articles']['Row'];
 
 export type EventDatePrecision = 'day' | 'month' | 'year' | 'decade' | 'century';
+
+export type ImagePreset = Database['public']['Tables']['image_presets']['Row'];
+export type ImageProject = Database['public']['Tables']['image_projects']['Row'];

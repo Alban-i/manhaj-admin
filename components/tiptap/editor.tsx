@@ -135,7 +135,7 @@ export default function Editor({
       Typography,
       Link,
       CustomImageExtension.configure({
-        inline: true,
+        inline: false,
         allowBase64: true,
       }),
       CustomAudioExtension,

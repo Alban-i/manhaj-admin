@@ -28,6 +28,7 @@ import {
 import LogoutBtn from '@/components/logout-btn';
 import userStore from '@/stores/user-store';
 import { DarkModeToggle } from '../dark-mode-toggle';
+import { LocaleSwitcherMenu } from '../locale-switcher-menu';
 
 export function NavUser() {
   const { isMobile } = useSidebar();
@@ -85,6 +86,9 @@ export function NavUser() {
                 </div>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+
+            <LocaleSwitcherMenu />
             <DropdownMenuSeparator />
 
             <DarkModeToggle />

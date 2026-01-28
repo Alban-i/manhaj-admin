@@ -390,6 +390,126 @@ export type Database = {
           },
         ]
       }
+      image_presets: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          height: number
+          id: string
+          name: string
+          prompt_template: string
+          style_reference_url: string | null
+          text_config: Json
+          updated_at: string | null
+          width: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          height?: number
+          id?: string
+          name: string
+          prompt_template: string
+          style_reference_url?: string | null
+          text_config?: Json
+          updated_at?: string | null
+          width?: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          height?: number
+          id?: string
+          name?: string
+          prompt_template?: string
+          style_reference_url?: string | null
+          text_config?: Json
+          updated_at?: string | null
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_presets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      image_projects: {
+        Row: {
+          background_image_url: string | null
+          created_at: string | null
+          created_by: string | null
+          generation_prompt: string | null
+          height: number
+          id: string
+          media_id: string | null
+          name: string
+          preset_id: string | null
+          style_reference_url: string | null
+          text_config: Json
+          text_content: string
+          updated_at: string | null
+          width: number
+        }
+        Insert: {
+          background_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          generation_prompt?: string | null
+          height?: number
+          id?: string
+          media_id?: string | null
+          name: string
+          preset_id?: string | null
+          style_reference_url?: string | null
+          text_config?: Json
+          text_content?: string
+          updated_at?: string | null
+          width?: number
+        }
+        Update: {
+          background_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          generation_prompt?: string | null
+          height?: number
+          id?: string
+          media_id?: string | null
+          name?: string
+          preset_id?: string | null
+          style_reference_url?: string | null
+          text_config?: Json
+          text_content?: string
+          updated_at?: string | null
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "image_projects_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "image_projects_preset_id_fkey"
+            columns: ["preset_id"]
+            isOneToOne: false
+            referencedRelation: "image_presets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       individual_translation_groups: {
         Row: {
           created_at: string | null

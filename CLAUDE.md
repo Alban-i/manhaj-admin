@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-This is a Next.js 15 application using App Router with TypeScript, serving as a content management system for OBS Admin. The architecture follows a modern full-stack pattern with:
+This is a Next.js 15 application using App Router with TypeScript, serving as a content management system for Manhaj Salafi Admin. The architecture follows a modern full-stack pattern with:
 
 - **Frontend**: React with TailwindCSS v4 and shadcn/ui components
 - **Backend**: Next.js API routes and Server Actions

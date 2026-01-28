@@ -23,6 +23,8 @@ import {
   FileText,
   Globe,
   History,
+  Palette,
+  ImagePlus,
 } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 
@@ -41,7 +43,6 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { Link } from '@/i18n/navigation';
-import { LanguageSwitcher } from '../language-switcher';
 import { isRtlLocale, type Locale } from '@/i18n/config';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -157,6 +158,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ],
     },
+    {
+      title: t('imageGenerator'),
+      url: '#',
+      icon: ImagePlus,
+      isActive: true,
+      items: [
+        {
+          title: t('imageProjects'),
+          icon: ImageIcon,
+          url: '/images',
+        },
+        {
+          title: t('imagePresets'),
+          icon: Palette,
+          url: '/images/presets',
+        },
+      ],
+    },
   ];
 
   const navSecondaryData = [
@@ -196,7 +215,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </div>
                 <div className="grid flex-1 text-start text-sm leading-tight">
                   <span className="truncate font-semibold font-fira uppercase">
-                    {t('obsAdmin')}
+                    {t('manhajSalafi')}
                   </span>
                   <span className="truncate text-xs">{t('researchCenter')}</span>
                 </div>
@@ -204,9 +223,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <div className="flex justify-end px-2">
-          <LanguageSwitcher />
-        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainData} />
