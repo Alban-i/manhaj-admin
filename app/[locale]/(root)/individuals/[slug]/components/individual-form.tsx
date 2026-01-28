@@ -18,6 +18,8 @@ import {
 import DeleteButton from '@/components/delete-btn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ExternalLinksInput } from '@/components/ui/external-links-input';
+import { type ExternalLink } from '@/lib/parse-external-link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -49,6 +51,11 @@ interface Type {
   name: string;
 }
 
+const externalLinkSchema = z.object({
+  url: z.string().url(),
+  display_name: z.string().min(1),
+});
+
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   slug: z
@@ -64,7 +71,10 @@ const formSchema = z.object({
   ranking: z.enum(['recommended', 'not recommended']),
   language: z.string().min(1, 'Language is required'),
   is_original: z.boolean(),
+  external_links: z.array(externalLinkSchema),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface IndividualFormProps {
   individual: (Omit<IndividualWithType, 'id'> & {
@@ -86,11 +96,13 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
 }) => {
   const router = useRouter();
   const supabase = createClient();
-  const [description, setDescription] = useState<string>(
-    individual?.description ?? ''
+  const [content, setContent] = useState<string>(
+    individual?.content ?? ''
   );
-  const initialDescriptionRef = useRef<string>(individual?.description ?? '');
-  const [descriptionJson, setDescriptionJson] = useState<Json | null>(null);
+  const initialContentRef = useRef<string>(individual?.content ?? '');
+  const [contentJson, setContentJson] = useState<Json | null>(
+    individual?.content_json ?? null
+  );
   const [loading, setLoading] = useState(false);
 
   const defaultValues = {
@@ -104,9 +116,10 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
     is_original: individual?.is_original ?? true,
     id: individual?.id,
     translation_group_id: individual?.translation_group_id ?? null,
+    external_links: (individual?.external_links as ExternalLink[]) ?? [],
   };
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: defaultValues.name,
@@ -117,6 +130,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       ranking: defaultValues.ranking,
       language: defaultValues.language,
       is_original: defaultValues.is_original,
+      external_links: defaultValues.external_links,
     },
   });
 
@@ -145,7 +159,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
     router.push(`/individuals/new?${params.toString()}`);
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
 
@@ -195,8 +209,8 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       const individualData = {
         name: values.name,
         slug: values.slug,
-        description: description || null,
-        description_json: descriptionJson,
+        content: content || null,
+        content_json: contentJson,
         status: values.status,
         language: values.language,
         is_original: values.is_original,
@@ -205,6 +219,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
         type_id: values.type_id && values.type_id !== 'none' ? parseInt(values.type_id) : null,
         original_name: values.original_name || null,
         ranking: values.ranking,
+        external_links: values.external_links,
         ...(defaultValues.id && { id: defaultValues.id }),
       };
 
@@ -221,7 +236,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       }
 
       toast.success(defaultValues.id ? 'Individual updated.' : 'Individual created.');
-      initialDescriptionRef.current = description;
+      initialContentRef.current = content;
 
       // Revalidate frontend cache
       await revalidateIndividual(data.slug);
@@ -576,17 +591,48 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
               </Card>
             )}
 
-            {/* DESCRIPTION - Full Width */}
+            {/* EXTERNAL LINKS - Full Width */}
             <Card className="md:col-span-2">
               <CardHeader>
-                <CardTitle>Description</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Link2 className="h-5 w-5" />
+                  External Links
+                </CardTitle>
+                <CardDescription>
+                  YouTube, Twitter/X, Telegram, websites, etc.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="external_links"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <ExternalLinksInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={loading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* CONTENT - Full Width */}
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Content</CardTitle>
               </CardHeader>
               <CardContent>
                 <Editor
-                  content={description}
+                  content={content}
                   onChange={(html, json) => {
-                    setDescription(html);
-                    if (json) setDescriptionJson(json as Json);
+                    setContent(html);
+                    if (json) setContentJson(json as Json);
                   }}
                 />
               </CardContent>
@@ -594,7 +640,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
           </fieldset>
 
           {/* Sticky Bottom Action Bar - appears when form is dirty */}
-          {(form.formState.isDirty || description !== initialDescriptionRef.current) && (
+          {(form.formState.isDirty || content !== initialContentRef.current) && (
             <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card">
               <div className="flex h-14 items-center justify-end gap-4 px-4 md:px-6">
                 <span className="text-sm text-muted-foreground mr-auto">
@@ -606,7 +652,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                   size="sm"
                   onClick={() => {
                     form.reset();
-                    setDescription(initialDescriptionRef.current);
+                    setContent(initialContentRef.current);
                   }}
                   disabled={loading}
                 >

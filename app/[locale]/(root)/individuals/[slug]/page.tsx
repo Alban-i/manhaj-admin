@@ -47,8 +47,8 @@ const IndividualPage = async ({
     const individualWithTranslation = translationParams.translateFrom ? {
       name: '',
       slug: translationParams.slug ?? '',
-      description: null,
-      description_json: null,
+      content: null,
+      content_json: null,
       status: 'draft' as const,
       type_id: translationGroup?.type_id ?? null,
       original_name: translationGroup?.original_name ?? '',
@@ -58,6 +58,7 @@ const IndividualPage = async ({
       is_original: false,
       created_at: null,
       updated_at: null,
+      external_links: [],
     } : null;
 
     return (

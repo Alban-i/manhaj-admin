@@ -364,9 +364,10 @@ export type Database = {
       }
       individuals: {
         Row: {
+          content: string | null
+          content_json: Json | null
           created_at: string | null
-          description: string | null
-          description_json: Json | null
+          external_links: Json | null
           id: number
           is_original: boolean
           language: string
@@ -380,9 +381,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          content?: string | null
+          content_json?: Json | null
           created_at?: string | null
-          description?: string | null
-          description_json?: Json | null
+          external_links?: Json | null
           id?: number
           is_original?: boolean
           language?: string
@@ -396,9 +398,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          content?: string | null
+          content_json?: Json | null
           created_at?: string | null
-          description?: string | null
-          description_json?: Json | null
+          external_links?: Json | null
           id?: number
           is_original?: boolean
           language?: string
