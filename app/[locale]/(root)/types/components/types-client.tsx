@@ -155,11 +155,7 @@ const TypesClient: React.FC<TypesClientProps> = ({
                           <Tooltip key={lang.code}>
                             <TooltipTrigger asChild>
                               <Badge
-                                variant={
-                                  hasTranslation(type, lang.code)
-                                    ? 'default'
-                                    : 'outline'
-                                }
+                                variant="outline"
                                 className={cn(
                                   'text-xs cursor-default',
                                   !hasTranslation(type, lang.code) &&
