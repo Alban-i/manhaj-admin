@@ -376,6 +376,8 @@
     "imageNumber": "Image {number}",
     "maxImagesReached": "Maximum images reached for this model",
     "uploadingImage": "Uploading...",
-    "estimatedCost": "Estimated cost: ~${cost}"
+    "estimatedCost": "Estimated cost: ~${cost}",
+    "generationHistory": "History",
+    "generationSelected": "Generation selected"
   }
 }

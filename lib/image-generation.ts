@@ -1,30 +1,65 @@
-// Cloudinary upload utility for client-side uploads
-export async function uploadToCloudinary(base64: string, mimeType: string): Promise<string> {
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = 'markazshaafii';
+// Supabase Storage upload result
+export interface SupabaseStorageUploadResult {
+  url: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+}
 
-  if (!cloudName) {
-    throw new Error('Cloudinary cloud name not configured');
+// Upload image to Supabase Storage (media bucket)
+export async function uploadToSupabaseStorage(
+  base64: string,
+  mimeType: string,
+  accessToken: string
+): Promise<SupabaseStorageUploadResult> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl) {
+    throw new Error('Supabase URL not configured');
   }
 
-  const dataUri = `data:${mimeType};base64,${base64}`;
-  const formData = new FormData();
-  formData.append('file', dataUri);
-  formData.append('upload_preset', uploadPreset);
-  formData.append('folder', 'image-generator');
+  // Convert base64 to blob
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  const blob = new Blob([byteArray], { type: mimeType });
 
+  // Generate path: image/{year}/{month}/{timestamp}_ai-generated.{ext}
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const timestamp = Date.now();
+  const ext = mimeType.split('/')[1] || 'png';
+  const fileName = `${timestamp}_ai-generated.${ext}`;
+  const filePath = `image/${year}/${month}/${fileName}`;
+
+  // Upload to Supabase Storage with user's session token
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    { method: 'POST', body: formData }
+    `${supabaseUrl}/storage/v1/object/media/${filePath}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': mimeType,
+      },
+      body: blob,
+    }
   );
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to upload to Cloudinary');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      (errorData as { message?: string }).message || 'Failed to upload to Supabase Storage'
+    );
   }
 
-  const data = await response.json();
-  return data.secure_url;
+  const url = `${supabaseUrl}/storage/v1/object/public/media/${filePath}`;
+  const fileSize = byteArray.length;
+
+  return { url, filePath, fileName, fileSize };
 }
 
 // Available models for image generation

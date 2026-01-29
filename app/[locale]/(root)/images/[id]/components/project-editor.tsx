@@ -23,7 +23,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Save, Loader2, Sparkles, Plus, X, DollarSign, ImagePlus } from 'lucide-react';
+import { Trash2, Save, Loader2, Sparkles, Plus, X, DollarSign, ImagePlus, History } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   ImageProjectWithRelations,
   ImagePresetWithCreator,
@@ -39,8 +40,11 @@ import {
 import createImageProject from '@/actions/image-generator/projects/create-project';
 import updateImageProject from '@/actions/image-generator/projects/update-project';
 import deleteImageProject from '@/actions/image-generator/projects/delete-project';
-import saveBackground from '@/actions/image-generator/projects/save-background';
-import { generateImage, uploadToCloudinary, getAspectRatio } from '@/lib/image-generation';
+import saveGeneratedImage from '@/actions/image-generator/projects/save-generated-image';
+import getProjectGenerations, { ProjectGeneration } from '@/actions/image-generator/projects/get-project-generations';
+import selectGeneration from '@/actions/image-generator/projects/select-generation';
+import { generateImage, uploadToSupabaseStorage, getAspectRatio } from '@/lib/image-generation';
+import { createClient } from '@/providers/supabase/client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,6 +90,10 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
   const [referenceImages, setReferenceImages] = useState<ReferenceImageRow[]>([]);
   const [uploadingRowId, setUploadingRowId] = useState<string | null>(null);
 
+  // Generation history state
+  const [generations, setGenerations] = useState<ProjectGeneration[]>([]);
+  const [isSelectingGeneration, setIsSelectingGeneration] = useState<string | null>(null);
+
   // File input refs - stored by row id
   const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
@@ -122,6 +130,19 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       setReferenceImages([]);
     }
   }, [supportsReferenceImages]);
+
+  // Load generation history on mount
+  useEffect(() => {
+    if (project?.id) {
+      loadGenerations();
+    }
+  }, [project?.id]);
+
+  const loadGenerations = async () => {
+    if (!project?.id) return;
+    const { data } = await getProjectGenerations(project.id);
+    setGenerations(data || []);
+  };
 
   // Apply preset settings when a preset is selected
   const handlePresetChange = (value: string) => {
@@ -315,6 +336,25 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
     }
   };
 
+  const handleSelectGeneration = async (generationId: string) => {
+    if (!project?.id) return;
+
+    setIsSelectingGeneration(generationId);
+    try {
+      const result = await selectGeneration(project.id, generationId);
+      if (result.success && result.imageUrl) {
+        setBackgroundImageUrl(result.imageUrl);
+        await loadGenerations();
+      } else {
+        toast.error(result.error || t('somethingWentWrong'));
+      }
+    } catch {
+      toast.error(t('somethingWentWrong'));
+    } finally {
+      setIsSelectingGeneration(null);
+    }
+  };
+
   const handleGenerateBackground = async () => {
     if (!project) {
       toast.error(t('saveProjectFirst'));
@@ -352,18 +392,41 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
         return;
       }
 
-      // Step 2: Upload to Cloudinary from browser (bypasses Vercel limits)
-      const imageUrl = await uploadToCloudinary(result.base64, result.mimeType);
+      // Step 2: Get user session for authenticated upload
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
 
-      // Step 3: Save URL to database (small payload to server action)
-      const saveResult = await saveBackground({ projectId: project.id, imageUrl });
+      if (!session?.access_token) {
+        toast.error(t('sessionExpired'));
+        return;
+      }
+
+      // Step 3: Upload to Supabase Storage with session token
+      const { url, filePath, fileName, fileSize } = await uploadToSupabaseStorage(
+        result.base64,
+        result.mimeType,
+        session.access_token
+      );
+
+      // Step 4: Save to database (creates media record + links to project)
+      const saveResult = await saveGeneratedImage({
+        projectId: project.id,
+        imageUrl: url,
+        filePath,
+        fileName,
+        fileSize,
+        mimeType: result.mimeType,
+        prompt: generationPrompt,
+        model: aiModel,
+      });
 
       if (!saveResult.success) {
         toast.error(saveResult.error || t('errorGenerating'));
         return;
       }
 
-      setBackgroundImageUrl(imageUrl);
+      setBackgroundImageUrl(url);
+      await loadGenerations();
       toast.success(t('backgroundGenerated'));
     } catch (error) {
       console.error('Error generating background:', error);
@@ -687,6 +750,49 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
 
               {isNew && (
                 <p className="text-sm text-muted-foreground">{t('saveToGenerate')}</p>
+              )}
+
+              {/* Generation History */}
+              {generations.length > 0 && (
+                <div className="pt-4 border-t">
+                  <div className="flex items-center gap-2 mb-3">
+                    <History className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm font-medium">{t('generationHistory')}</Label>
+                    <span className="text-xs text-muted-foreground">
+                      ({generations.length})
+                    </span>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {generations.map((gen) => (
+                      <button
+                        key={gen.id}
+                        type="button"
+                        onClick={() => handleSelectGeneration(gen.id)}
+                        disabled={isSelectingGeneration === gen.id}
+                        className={cn(
+                          'shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-all relative',
+                          gen.is_selected
+                            ? 'border-primary ring-2 ring-primary/20'
+                            : 'border-transparent hover:border-muted-foreground/30',
+                          isSelectingGeneration === gen.id && 'opacity-50'
+                        )}
+                      >
+                        {gen.media?.url && (
+                          <img
+                            src={gen.media.url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        {isSelectingGeneration === gen.id && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                            <Loader2 className="h-4 w-4 animate-spin text-white" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
 
               <div className="space-y-2">

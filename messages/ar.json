@@ -376,6 +376,8 @@
     "imageNumber": "صورة {number}",
     "maxImagesReached": "تم الوصول إلى الحد الأقصى من الصور لهذا النموذج",
     "uploadingImage": "جارٍ الرفع...",
-    "estimatedCost": "التكلفة التقديرية: ~{cost} $"
+    "estimatedCost": "التكلفة التقديرية: ~{cost} $",
+    "generationHistory": "السجل",
+    "generationSelected": "تم تحديد الصورة"
   }
 }
