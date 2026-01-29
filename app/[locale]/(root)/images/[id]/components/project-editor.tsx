@@ -39,7 +39,8 @@ import {
 import createImageProject from '@/actions/image-generator/projects/create-project';
 import updateImageProject from '@/actions/image-generator/projects/update-project';
 import deleteImageProject from '@/actions/image-generator/projects/delete-project';
-import generateBackground from '@/actions/image-generator/projects/generate-background';
+import saveBackground from '@/actions/image-generator/projects/save-background';
+import { generateImage, uploadToCloudinary, getAspectRatio } from '@/lib/image-generation';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -338,23 +339,35 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
             }))
         : undefined;
 
-      const result = await generateBackground({
-        projectId: project.id,
+      // Step 1: Call Edge Function directly from browser (bypasses Vercel limits)
+      const result = await generateImage({
         prompt: generationPrompt,
         model: aiModel,
-        width,
-        height,
+        aspectRatio: getAspectRatio(width, height),
         referenceImages: refImagesData && refImagesData.length > 0 ? refImagesData : undefined,
       });
 
-      if (result.success && result.imageUrl) {
-        setBackgroundImageUrl(result.imageUrl);
-        toast.success(t('backgroundGenerated'));
-      } else {
+      if (!result.success) {
         toast.error(result.error || t('errorGenerating'));
+        return;
       }
-    } catch {
-      toast.error(t('somethingWentWrong'));
+
+      // Step 2: Upload to Cloudinary from browser (bypasses Vercel limits)
+      const imageUrl = await uploadToCloudinary(result.base64, result.mimeType);
+
+      // Step 3: Save URL to database (small payload to server action)
+      const saveResult = await saveBackground({ projectId: project.id, imageUrl });
+
+      if (!saveResult.success) {
+        toast.error(saveResult.error || t('errorGenerating'));
+        return;
+      }
+
+      setBackgroundImageUrl(imageUrl);
+      toast.success(t('backgroundGenerated'));
+    } catch (error) {
+      console.error('Error generating background:', error);
+      toast.error(error instanceof Error ? error.message : t('somethingWentWrong'));
     } finally {
       setIsGenerating(false);
     }

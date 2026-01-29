@@ -1,3 +1,32 @@
+// Cloudinary upload utility for client-side uploads
+export async function uploadToCloudinary(base64: string, mimeType: string): Promise<string> {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = 'markazshaafii';
+
+  if (!cloudName) {
+    throw new Error('Cloudinary cloud name not configured');
+  }
+
+  const dataUri = `data:${mimeType};base64,${base64}`;
+  const formData = new FormData();
+  formData.append('file', dataUri);
+  formData.append('upload_preset', uploadPreset);
+  formData.append('folder', 'image-generator');
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: 'POST', body: formData }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to upload to Cloudinary');
+  }
+
+  const data = await response.json();
+  return data.secure_url;
+}
+
 // Available models for image generation
 export const IMAGE_GENERATION_MODELS = {
   'nano-banana': 'imagen-4.0-fast-generate-001',
