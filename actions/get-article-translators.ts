@@ -9,7 +9,7 @@ export default async function getArticleTranslators(identifier: string): Promise
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
 
   let query = supabase
-    .from('articles')
+    .from('article_translations')
     .select('id');
 
   if (isUuid) {

@@ -32,9 +32,9 @@ export async function createArticleForTimeline(
   const supabase = await createClient();
 
   try {
-    // 1. Create translation_group first
-    const { data: translationGroup, error: groupError } = await supabase
-      .from('translation_groups')
+    // 1. Create article metadata first
+    const { data: articleMetadata, error: metadataError } = await supabase
+      .from('articles')
       .insert({
         author_id: input.author_id,
         category_id: input.category_id || null,
@@ -44,17 +44,17 @@ export async function createArticleForTimeline(
       .select()
       .single();
 
-    if (groupError) {
-      console.error('Error creating translation group:', groupError);
+    if (metadataError) {
+      console.error('Error creating article metadata:', metadataError);
       return {
         success: false,
-        error: 'Failed to create translation group: ' + groupError.message,
+        error: 'Failed to create article metadata: ' + metadataError.message,
       };
     }
 
-    // 2. Create the article
+    // 2. Create the article translation
     const { data: article, error: articleError } = await supabase
-      .from('articles')
+      .from('article_translations')
       .insert({
         title: input.title,
         slug: input.slug,
@@ -64,7 +64,7 @@ export async function createArticleForTimeline(
         author_id: input.author_id,
         category_id: input.category_id || null,
         language: input.language,
-        translation_group_id: translationGroup.id,
+        article_id: articleMetadata.id,
         is_original: true,
         is_featured: false,
         event_date_hijri: input.event_date_hijri || null,
@@ -75,12 +75,12 @@ export async function createArticleForTimeline(
       .single();
 
     if (articleError) {
-      console.error('Error creating article:', articleError);
-      // Try to clean up the translation group we created
+      console.error('Error creating article translation:', articleError);
+      // Try to clean up the article metadata we created
       await supabase
-        .from('translation_groups')
+        .from('articles')
         .delete()
-        .eq('id', translationGroup.id);
+        .eq('id', articleMetadata.id);
       return {
         success: false,
         error: 'Failed to create article: ' + articleError.message,
@@ -109,12 +109,12 @@ export async function createArticleForTimeline(
 
     if (timelineArticleError) {
       console.error('Error adding article to timeline:', timelineArticleError);
-      // Clean up: delete the article and translation group
-      await supabase.from('articles').delete().eq('id', article.id);
+      // Clean up: delete the article translation and metadata
+      await supabase.from('article_translations').delete().eq('id', article.id);
       await supabase
-        .from('translation_groups')
+        .from('articles')
         .delete()
-        .eq('id', translationGroup.id);
+        .eq('id', articleMetadata.id);
       return {
         success: false,
         error: 'Failed to add article to timeline: ' + timelineArticleError.message,

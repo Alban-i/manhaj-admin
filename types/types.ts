@@ -9,10 +9,13 @@ export type TextDirection = 'ltr' | 'rtl';
 
 export type ArticleStatus = 'Draft' | 'Published' | 'Archived';
 export type TimelineStatus = 'draft' | 'published' | 'archived';
-export type Articles = Omit<
-  Database['public']['Tables']['articles']['Row'],
-  'status' | 'category_id'
-> & {
+
+// Article translation (the actual article content in a specific language)
+export type ArticleTranslation = Database['public']['Tables']['article_translations']['Row'];
+// Article metadata (shared across translations)
+export type Article = Database['public']['Tables']['articles']['Row'];
+// Legacy alias for compatibility
+export type Articles = Omit<ArticleTranslation, 'status' | 'category_id'> & {
   status: ArticleStatus;
   category_id: string | null;
   is_published: boolean;
@@ -72,7 +75,12 @@ export type TypeWithTranslations = Type & {
   classification: ClassificationWithTranslations;
 };
 
-export type Timeline = Database['public']['Tables']['timelines']['Row'];
+// Timeline translation (the timeline content in a specific language)
+export type TimelineTranslation = Database['public']['Tables']['timeline_translations']['Row'];
+// Timeline metadata (shared across translations)
+export type TimelineMetadata = Database['public']['Tables']['timelines']['Row'];
+// Legacy alias for compatibility
+export type Timeline = TimelineTranslation;
 
 export type TimelineArticle = Database['public']['Tables']['timeline_articles']['Row'];
 

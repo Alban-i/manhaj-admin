@@ -4,7 +4,7 @@ import { Timeline } from '@/types/types';
 const getTimelines = async (): Promise<Timeline[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('timelines')
+    .from('timeline_translations')
     .select(`*`)
     .order('title', { ascending: true });
 

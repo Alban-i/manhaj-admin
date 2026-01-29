@@ -88,13 +88,13 @@ const initialData = {
   status: 'draft',
   category_id: null,
   author_id: null,
-  individual_translation_group_id: null,
+  individual_id: null,
   id: undefined,
   published_at: null,
   is_featured: false,
   image_url: '',
   language: 'ar',
-  translation_group_id: null,
+  article_id: null,
   is_original: true,
   event_date_hijri: null,
   event_date_hijri_year: null,
@@ -107,7 +107,7 @@ const formSchema = z.object({
   slug: z.string().min(1),
   category_id: z.string().optional(),
   author_id: z.string().min(1, 'Author is required'),
-  individual_translation_group_id: z.string().optional(),
+  individual_id: z.string().optional(),
   is_featured: z.boolean(),
   is_original: z.boolean(),
   image_url: z.string().optional(),
@@ -126,7 +126,7 @@ interface TagWithLocalizedName {
 }
 
 interface ArticleFormProps {
-  article: (Omit<Articles, 'is_published'> & { id?: string; individual_translation_group_id?: string | null }) | null;
+  article: (Omit<Articles, 'is_published'> & { id?: string; individual_id?: string | null }) | null;
   categories: { id: number; name: string }[];
   tags: TagWithLocalizedName[];
   selectedTagIds: number[];
@@ -179,7 +179,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       slug: defaultValues.slug ?? '',
       category_id: defaultValues.category_id?.toString() ?? undefined,
       author_id: defaultValues.author_id?.toString() ?? undefined,
-      individual_translation_group_id: defaultValues.individual_translation_group_id ?? undefined,
+      individual_id: defaultValues.individual_id ?? undefined,
       is_featured: defaultValues.is_featured ?? false,
       is_original: defaultValues.is_original ?? true,
       image_url: defaultValues.image_url ?? '',
@@ -207,7 +207,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     // Navigate to new article page with translation params
     const params = new URLSearchParams({
       translate_from: defaultValues.id,
-      translation_group_id: defaultValues.translation_group_id ?? defaultValues.id,
+      article_id: defaultValues.article_id ?? defaultValues.id,
       language: targetLanguage,
       slug: newSlug,
       category_id: defaultValues.category_id?.toString() ?? '',
@@ -226,21 +226,21 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     try {
       setLoading(true);
 
-      let translationGroupId = defaultValues.translation_group_id;
+      let articleMetadataId = defaultValues.article_id;
 
       // Shared data that goes to translation_groups
       const sharedData = {
         author_id: values.author_id || null,
         category_id: values.category_id ? Number(values.category_id) : null,
-        individual_translation_group_id: values.individual_translation_group_id || null,
+        individual_id: values.individual_id || null,
         image_url: values.image_url || null,
         updated_at: new Date().toISOString(),
       };
 
-      // For new articles without translation_group_id, create a new translation_group
-      if (!translationGroupId) {
+      // For new articles without article_id, create a new translation_group
+      if (!articleMetadataId) {
         const { data: newGroup, error: groupError } = await supabase
-          .from('translation_groups')
+          .from('articles')
           .insert({
             ...sharedData,
             created_at: new Date().toISOString(),
@@ -254,13 +254,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           return;
         }
 
-        translationGroupId = newGroup.id;
+        articleMetadataId = newGroup.id;
       } else {
         // Update existing translation_group with shared data
         const { error: updateGroupError } = await supabase
-          .from('translation_groups')
+          .from('articles')
           .update(sharedData)
-          .eq('id', translationGroupId);
+          .eq('id', articleMetadataId);
 
         if (updateGroupError) {
           toast.error(t('failedToUpdateGroup') + ': ' + updateGroupError.message);
@@ -280,7 +280,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         is_featured: values.is_featured,
         is_original: values.is_original,
         language: values.language,
-        translation_group_id: translationGroupId,
+        article_id: articleMetadataId,
         published_at:
           status === 'published' &&
           defaultValues.status?.toLowerCase() !== 'published'
@@ -298,7 +298,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       };
 
       const { data, error } = await supabase
-        .from('articles')
+        .from('article_translations')
         .upsert(articleData)
         .select()
         .single();
@@ -320,9 +320,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       // Update tags in translation_group_tags
       if (tagsToRemove.length > 0) {
         const { error: deleteError } = await supabase
-          .from('translation_group_tags')
+          .from('article_group_tags')
           .delete()
-          .eq('translation_group_id', translationGroupId)
+          .eq('article_id', articleMetadataId)
           .in('tag_id', tagsToRemove);
 
         if (deleteError) {
@@ -333,13 +333,13 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
       if (tagsToAdd.length > 0) {
         const tagData = tagsToAdd.map((tagId) => ({
-          translation_group_id: translationGroupId,
+          article_id: articleMetadataId,
           tag_id: tagId,
         }));
 
         const { error: insertError } = await supabase
-          .from('translation_group_tags')
-          .upsert(tagData, { onConflict: 'translation_group_id,tag_id' });
+          .from('article_group_tags')
+          .upsert(tagData, { onConflict: 'article_id,tag_id' });
 
         if (insertError) {
           toast.error(t('failedToAddTags'));
@@ -391,7 +391,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         slug: data.slug ?? '',
         category_id: values.category_id ?? undefined,
         author_id: values.author_id ?? undefined,
-        individual_translation_group_id: values.individual_translation_group_id ?? undefined,
+        individual_id: values.individual_id ?? undefined,
         is_featured: data.is_featured ?? false,
         is_original: data.is_original ?? true,
         image_url: values.image_url ?? '',
@@ -434,7 +434,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
     try {
       const { error } = await supabase
-        .from('articles')
+        .from('article_translations')
         .delete()
         .eq('id', defaultValues.id);
 
@@ -715,7 +715,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   {/* Individual */}
                   <FormField
                     control={form.control}
-                    name="individual_translation_group_id"
+                    name="individual_id"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>{t('individual')}</FormLabel>

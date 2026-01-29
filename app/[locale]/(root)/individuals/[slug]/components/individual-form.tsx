@@ -80,7 +80,7 @@ interface IndividualFormProps {
   individual: (Omit<IndividualWithType, 'id'> & {
     id?: number;
     language?: string;
-    translation_group_id?: string | null;
+    individual_id?: string | null;
     is_original?: boolean;
   }) | null;
   types: Type[];
@@ -115,7 +115,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
     language: individual?.language ?? 'ar',
     is_original: individual?.is_original ?? true,
     id: individual?.id,
-    translation_group_id: individual?.translation_group_id ?? null,
+    individual_id: individual?.individual_id ?? null,
     external_links: (individual?.external_links as ExternalLink[]) ?? [],
   };
 
@@ -151,7 +151,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
     // Navigate to new individual page with translation params
     const params = new URLSearchParams({
       translate_from: defaultValues.id.toString(),
-      translation_group_id: defaultValues.translation_group_id ?? '',
+      individual_id: defaultValues.individual_id ?? '',
       language: targetLanguage,
       slug: newSlug,
     });
@@ -163,7 +163,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
     try {
       setLoading(true);
 
-      let translationGroupId = defaultValues.translation_group_id;
+      let individualMetadataId = defaultValues.individual_id;
 
       // Shared data that goes to individual_translation_groups
       const sharedData = {
@@ -173,10 +173,10 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
         updated_at: new Date().toISOString(),
       };
 
-      // For new individuals without translation_group_id, create a new translation_group
-      if (!translationGroupId) {
+      // For new individuals without individual_id, create a new individual metadata record
+      if (!individualMetadataId) {
         const { data: newGroup, error: groupError } = await supabase
-          .from('individual_translation_groups')
+          .from('individuals')
           .insert({
             ...sharedData,
             created_at: new Date().toISOString(),
@@ -185,18 +185,18 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
           .single();
 
         if (groupError) {
-          toast.error('Failed to create translation group: ' + groupError.message);
+          toast.error('Failed to create individual metadata: ' + groupError.message);
           setLoading(false);
           return;
         }
 
-        translationGroupId = newGroup.id;
+        individualMetadataId = newGroup.id;
       } else {
-        // Update existing translation_group with shared data
+        // Update existing individual metadata with shared data
         const { error: updateGroupError } = await supabase
-          .from('individual_translation_groups')
+          .from('individuals')
           .update(sharedData)
-          .eq('id', translationGroupId);
+          .eq('id', individualMetadataId);
 
         if (updateGroupError) {
           toast.error('Failed to update translation group: ' + updateGroupError.message);
@@ -214,7 +214,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
         status: values.status,
         language: values.language,
         is_original: values.is_original,
-        translation_group_id: translationGroupId,
+        individual_id: individualMetadataId,
         // Keep these for backward compatibility but they're managed via translation_groups now
         type_id: values.type_id && values.type_id !== 'none' ? parseInt(values.type_id) : null,
         original_name: values.original_name || null,
@@ -224,7 +224,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       };
 
       const { data, error } = await supabase
-        .from('individuals')
+        .from('individual_translations')
         .upsert(individualData)
         .select()
         .single();
@@ -259,7 +259,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       if (!defaultValues.id) return;
 
       const { error } = await supabase
-        .from('individuals')
+        .from('individual_translations')
         .delete()
         .eq('id', defaultValues.id);
 

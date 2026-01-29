@@ -10,9 +10,9 @@ export interface ArticleTranslation {
 }
 
 export default async function getArticleTranslations(
-  translationGroupId: string | null
+  articleId: string | null
 ): Promise<ArticleTranslation[]> {
-  if (!translationGroupId) {
+  if (!articleId) {
     return [];
   }
 
@@ -20,9 +20,9 @@ export default async function getArticleTranslations(
 
   try {
     const { data, error } = await supabase
-      .from('articles')
+      .from('article_translations')
       .select('id, title, slug, language, is_original, status')
-      .eq('translation_group_id', translationGroupId)
+      .eq('article_id', articleId)
       .order('is_original', { ascending: false });
 
     if (error) {

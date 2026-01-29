@@ -10,9 +10,9 @@ export interface TimelineTranslation {
 }
 
 export default async function getTimelineTranslations(
-  translationGroupId: string | null
+  timelineId: string | null
 ): Promise<TimelineTranslation[]> {
-  if (!translationGroupId) {
+  if (!timelineId) {
     return [];
   }
 
@@ -20,9 +20,9 @@ export default async function getTimelineTranslations(
 
   try {
     const { data, error } = await supabase
-      .from('timelines')
+      .from('timeline_translations')
       .select('id, title, slug, language, is_original, status')
-      .eq('translation_group_id', translationGroupId)
+      .eq('timeline_id', timelineId)
       .order('is_original', { ascending: false });
 
     if (error) {

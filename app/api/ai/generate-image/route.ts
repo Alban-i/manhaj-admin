@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import { generateImage, ImageGenerationModel, IMAGE_GENERATION_MODELS } from '@/lib/google-genai';
+import {
+  generateImage,
+  getAspectRatio,
+  ImageGenerationModel,
+  IMAGE_GENERATION_MODELS,
+} from '@/lib/google-genai';
 
 interface ReferenceImageData {
   base64: string;
   mimeType: string;
-}
-
-interface ReferenceImagesData {
-  elements?: ReferenceImageData[];
-  style?: ReferenceImageData[];
-  person?: ReferenceImageData[];
+  description: string;
 }
 
 interface GenerateImageRequest {
@@ -17,7 +17,7 @@ interface GenerateImageRequest {
   model: ImageGenerationModel;
   width: number;
   height: number;
-  referenceImages?: ReferenceImagesData;
+  referenceImages?: ReferenceImageData[];
 }
 
 // Upload base64 image to Cloudinary
@@ -80,10 +80,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check API key
-    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    // Check Vertex AI configuration
+    if (!process.env.GOOGLE_VERTEX_PROJECT || !process.env.GOOGLE_CLIENT_EMAIL) {
       return NextResponse.json(
-        { error: 'Google AI API key not configured' },
+        { error: 'Google Vertex AI not configured' },
         { status: 500 }
       );
     }
@@ -92,8 +92,7 @@ export async function POST(request: Request) {
     const result = await generateImage({
       prompt,
       model,
-      width,
-      height,
+      aspectRatio: getAspectRatio(width, height),
       referenceImages,
     });
 

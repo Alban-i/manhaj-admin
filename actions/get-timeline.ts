@@ -4,7 +4,7 @@ import { Timeline } from '@/types/types';
 const getTimeline = async (slug: string): Promise<Timeline | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('timelines')
+    .from('timeline_translations')
     .select(`*`)
     .eq('slug', slug)
     .single();

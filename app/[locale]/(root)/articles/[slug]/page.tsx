@@ -40,21 +40,21 @@ const ArticlePage = async ({
   // Handle translation creation params
   const translationParams = {
     translateFrom: query.translate_from as string | undefined,
-    translationGroupId: query.translation_group_id as string | undefined,
+    articleId: query.article_id as string | undefined,
     language: query.language as string | undefined,
     slug: query.slug as string | undefined,
   };
 
   // Fetch translation group data if creating a new translation
-  const translationGroup = translationParams.translationGroupId
-    ? await getTranslationGroup(translationParams.translationGroupId)
+  const translationGroup = translationParams.articleId
+    ? await getTranslationGroup(translationParams.articleId)
     : null;
 
-  // Fetch translations if article exists and has a translation_group_id
-  const translations = article?.translation_group_id
-    ? await getArticleTranslations(article.translation_group_id)
-    : translationParams.translationGroupId
-      ? await getArticleTranslations(translationParams.translationGroupId)
+  // Fetch translations if article exists and has a article_id
+  const translations = article?.article_id
+    ? await getArticleTranslations(article.article_id)
+    : translationParams.articleId
+      ? await getArticleTranslations(translationParams.articleId)
       : [];
 
   // If creating a new translation, pre-fill with translation group data
@@ -66,13 +66,13 @@ const ArticlePage = async ({
     status: 'draft',
     category_id: translationGroup?.category_id?.toString() ?? null,
     author_id: translationGroup?.author_id ?? null,
-    individual_translation_group_id: translationGroup?.individual_translation_group_id ?? null,
+    individual_id: translationGroup?.individual_id ?? null,
     id: undefined,
     published_at: null,
     is_featured: false,
     image_url: translationGroup?.image_url ?? '',
     language: translationParams.language ?? 'ar',
-    translation_group_id: translationParams.translationGroupId ?? null,
+    article_id: translationParams.articleId ?? null,
     is_original: false,
   } : null);
 

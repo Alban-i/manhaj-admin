@@ -13,7 +13,7 @@ export interface UpsertTimelineInput {
   language?: string | null;
   category_id?: number | null;
   is_original?: boolean;
-  translation_group_id?: string | null;
+  timeline_id?: string | null;
 }
 
 export interface UpsertTimelineResult {
@@ -39,12 +39,12 @@ export async function upsertTimeline(
     language: input.language || 'ar',
     category_id: input.category_id || null,
     is_original: input.is_original ?? true,
-    translation_group_id: input.translation_group_id || null,
+    timeline_id: input.timeline_id || null,
     ...(input.id && { id: input.id }),
   };
 
   const { data, error } = await supabase
-    .from('timelines')
+    .from('timeline_translations')
     .upsert(timelineData)
     .select('id, slug')
     .single();
@@ -256,7 +256,7 @@ export async function deleteTimeline(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
 
-  const { error } = await supabase.from('timelines').delete().eq('id', id);
+  const { error } = await supabase.from('timeline_translations').delete().eq('id', id);
 
   if (error) {
     console.error('Error deleting timeline:', error);

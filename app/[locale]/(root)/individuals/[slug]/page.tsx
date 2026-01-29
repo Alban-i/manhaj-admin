@@ -25,21 +25,21 @@ const IndividualPage = async ({
   // Handle translation creation params
   const translationParams = {
     translateFrom: query.translate_from as string | undefined,
-    translationGroupId: query.translation_group_id as string | undefined,
+    individualId: query.individual_id as string | undefined,
     language: query.language as string | undefined,
     slug: query.slug as string | undefined,
   };
 
   // Fetch translation group data if creating a new translation
-  const translationGroup = translationParams.translationGroupId
-    ? await getIndividualTranslationGroup(translationParams.translationGroupId)
+  const translationGroup = translationParams.individualId
+    ? await getIndividualTranslationGroup(translationParams.individualId)
     : null;
 
-  // Fetch translations if individual exists and has a translation_group_id
-  const translations = individual && individual !== 'error' && individual.translation_group_id
-    ? await getIndividualTranslations(individual.translation_group_id)
-    : translationParams.translationGroupId
-      ? await getIndividualTranslations(translationParams.translationGroupId)
+  // Fetch translations if individual exists and has a individual_id
+  const translations = individual && individual !== 'error' && individual.individual_id
+    ? await getIndividualTranslations(individual.individual_id)
+    : translationParams.individualId
+      ? await getIndividualTranslations(translationParams.individualId)
       : [];
 
   // If slug is 'new', return empty individual or pre-filled translation
@@ -54,7 +54,7 @@ const IndividualPage = async ({
       original_name: translationGroup?.original_name ?? '',
       ranking: translationGroup?.ranking ?? 'not recommended',
       language: translationParams.language ?? 'ar',
-      translation_group_id: translationParams.translationGroupId ?? null,
+      individual_id: translationParams.individualId ?? null,
       is_original: false,
       created_at: null,
       updated_at: null,

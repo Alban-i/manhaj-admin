@@ -87,7 +87,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
     language: timeline?.language ?? 'ar',
     category_id: timeline?.category_id?.toString() ?? undefined,
     is_original: timeline?.is_original ?? true,
-    translation_group_id: timeline?.translation_group_id ?? null,
+    timeline_id: timeline?.timeline_id ?? null,
   };
 
   type FormStatus = 'draft' | 'published' | 'archived';
@@ -130,7 +130,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
     // Navigate to new timeline page with translation params
     const params = new URLSearchParams({
       translate_from: defaultValues.id,
-      translation_group_id: defaultValues.translation_group_id ?? defaultValues.id,
+      timeline_id: defaultValues.timeline_id ?? defaultValues.id,
       language: targetLanguage,
       slug: newSlug,
     });
@@ -153,7 +153,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
     try {
       setLoading(true);
 
-      let translationGroupId = defaultValues.translation_group_id;
+      let timelineMetadataId = defaultValues.timeline_id;
 
       // Shared data that goes to translation_groups
       const sharedData = {
@@ -162,10 +162,10 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
         updated_at: new Date().toISOString(),
       };
 
-      // For new timelines without translation_group_id, create a new translation_group
-      if (!translationGroupId) {
+      // For new timelines without timeline_id, create a new translation_group
+      if (!timelineMetadataId) {
         const { data: newGroup, error: groupError } = await supabase
-          .from('translation_groups')
+          .from('timelines')
           .insert({
             ...sharedData,
             created_at: new Date().toISOString(),
@@ -179,13 +179,13 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
           return;
         }
 
-        translationGroupId = newGroup.id;
+        timelineMetadataId = newGroup.id;
       } else {
         // Update existing translation_group with shared data
         const { error: updateGroupError } = await supabase
-          .from('translation_groups')
+          .from('timelines')
           .update(sharedData)
-          .eq('id', translationGroupId);
+          .eq('id', timelineMetadataId);
 
         if (updateGroupError) {
           toast.error('Failed to update translation group: ' + updateGroupError.message);
@@ -204,7 +204,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
         language: values.language,
         category_id: values.category_id ? Number(values.category_id) : null,
         is_original: values.is_original,
-        translation_group_id: translationGroupId,
+        timeline_id: timelineMetadataId,
       });
 
       if (!result.success) {

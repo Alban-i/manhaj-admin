@@ -144,17 +144,11 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
   },
 ];
 
-// Reference image types for Gemini models
-export type ReferenceImageType = 'elements' | 'style' | 'person';
-
-export interface ReferenceImage {
+// Reference image row for flexible reference images
+export interface ReferenceImageRow {
   id: string;
-  url: string;
-  type: ReferenceImageType;
-}
-
-export interface ReferenceImages {
-  elements: ReferenceImage[];
-  style: ReferenceImage[];
-  person: ReferenceImage[];
+  url: string;          // For preview
+  base64?: string;      // For API
+  mimeType?: string;    // For API
+  description: string;  // User's description of how to use this image
 }

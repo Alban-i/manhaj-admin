@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      article_group_tags: {
+        Row: {
+          article_id: string
+          created_at: string | null
+          tag_id: number
+        }
+        Insert: {
+          article_id: string
+          created_at?: string | null
+          tag_id: number
+        }
+        Update: {
+          article_id?: string
+          created_at?: string | null
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_group_tags_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_group_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_media: {
         Row: {
           article_id: string
@@ -38,7 +71,7 @@ export type Database = {
             foreignKeyName: "article_media_article_id_fkey"
             columns: ["article_id"]
             isOneToOne: false
-            referencedRelation: "articles"
+            referencedRelation: "article_translations"
             referencedColumns: ["id"]
           },
           {
@@ -71,7 +104,7 @@ export type Database = {
             foreignKeyName: "article_tags_article_id_fkey"
             columns: ["article_id"]
             isOneToOne: false
-            referencedRelation: "articles"
+            referencedRelation: "article_translations"
             referencedColumns: ["id"]
           },
           {
@@ -80,6 +113,110 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tags"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_translations: {
+        Row: {
+          article_id: string | null
+          author_id: string | null
+          category_id: number | null
+          content: string
+          content_json: Json | null
+          created_at: string | null
+          event_date_gregorian: string | null
+          event_date_hijri: string | null
+          event_date_hijri_year: number | null
+          event_date_precision: string | null
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          is_original: boolean
+          language: string
+          published_at: string | null
+          slug: string
+          status: string
+          summary: string
+          title: string
+          updated_at: string | null
+          views: number
+        }
+        Insert: {
+          article_id?: string | null
+          author_id?: string | null
+          category_id?: number | null
+          content: string
+          content_json?: Json | null
+          created_at?: string | null
+          event_date_gregorian?: string | null
+          event_date_hijri?: string | null
+          event_date_hijri_year?: number | null
+          event_date_precision?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_original?: boolean
+          language?: string
+          published_at?: string | null
+          slug: string
+          status: string
+          summary: string
+          title: string
+          updated_at?: string | null
+          views?: number
+        }
+        Update: {
+          article_id?: string | null
+          author_id?: string | null
+          category_id?: number | null
+          content?: string
+          content_json?: Json | null
+          created_at?: string | null
+          event_date_gregorian?: string | null
+          event_date_hijri?: string | null
+          event_date_hijri_year?: number | null
+          event_date_precision?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_original?: boolean
+          language?: string
+          published_at?: string | null
+          slug?: string
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string | null
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_translations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_translations_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_translations_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_translations_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -107,14 +244,14 @@ export type Database = {
             foreignKeyName: "article_translators_article_id_fkey"
             columns: ["article_id"]
             isOneToOne: false
-            referencedRelation: "articles"
+            referencedRelation: "article_translations"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "article_translators_individual_id_fkey"
             columns: ["individual_id"]
             isOneToOne: false
-            referencedRelation: "individuals"
+            referencedRelation: "individual_translations"
             referencedColumns: ["id"]
           },
         ]
@@ -140,7 +277,7 @@ export type Database = {
             foreignKeyName: "article_view_tracking_article_id_fkey"
             columns: ["article_id"]
             isOneToOne: false
-            referencedRelation: "articles"
+            referencedRelation: "article_translations"
             referencedColumns: ["id"]
           },
         ]
@@ -149,74 +286,29 @@ export type Database = {
         Row: {
           author_id: string | null
           category_id: number | null
-          content: string
-          content_json: Json | null
           created_at: string | null
-          event_date_gregorian: string | null
-          event_date_hijri: string | null
-          event_date_hijri_year: number | null
-          event_date_precision: string | null
           id: string
           image_url: string | null
-          is_featured: boolean | null
-          is_original: boolean
-          language: string
-          published_at: string | null
-          slug: string
-          status: string
-          summary: string
-          title: string
-          translation_group_id: string | null
+          individual_id: string | null
           updated_at: string | null
-          views: number
         }
         Insert: {
           author_id?: string | null
           category_id?: number | null
-          content: string
-          content_json?: Json | null
           created_at?: string | null
-          event_date_gregorian?: string | null
-          event_date_hijri?: string | null
-          event_date_hijri_year?: number | null
-          event_date_precision?: string | null
           id?: string
           image_url?: string | null
-          is_featured?: boolean | null
-          is_original?: boolean
-          language?: string
-          published_at?: string | null
-          slug: string
-          status: string
-          summary: string
-          title: string
-          translation_group_id?: string | null
+          individual_id?: string | null
           updated_at?: string | null
-          views?: number
         }
         Update: {
           author_id?: string | null
           category_id?: number | null
-          content?: string
-          content_json?: Json | null
           created_at?: string | null
-          event_date_gregorian?: string | null
-          event_date_hijri?: string | null
-          event_date_hijri_year?: number | null
-          event_date_precision?: string | null
           id?: string
           image_url?: string | null
-          is_featured?: boolean | null
-          is_original?: boolean
-          language?: string
-          published_at?: string | null
-          slug?: string
-          status?: string
-          summary?: string
-          title?: string
-          translation_group_id?: string | null
+          individual_id?: string | null
           updated_at?: string | null
-          views?: number
         }
         Relationships: [
           {
@@ -234,24 +326,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "articles_language_fkey"
-            columns: ["language"]
+            foreignKeyName: "articles_individual_id_fkey"
+            columns: ["individual_id"]
             isOneToOne: false
-            referencedRelation: "languages"
-            referencedColumns: ["code"]
-          },
-          {
-            foreignKeyName: "articles_translation_group_id_fkey"
-            columns: ["translation_group_id"]
-            isOneToOne: false
-            referencedRelation: "translation_groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_articles_category"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
+            referencedRelation: "individuals"
             referencedColumns: ["id"]
           },
         ]
@@ -510,7 +588,83 @@ export type Database = {
           },
         ]
       }
-      individual_translation_groups: {
+      individual_translations: {
+        Row: {
+          content: string | null
+          content_json: Json | null
+          created_at: string | null
+          external_links: Json | null
+          id: number
+          individual_id: string | null
+          is_original: boolean
+          language: string
+          name: string
+          original_name: string | null
+          ranking: string | null
+          slug: string
+          status: string
+          type_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          content_json?: Json | null
+          created_at?: string | null
+          external_links?: Json | null
+          id?: number
+          individual_id?: string | null
+          is_original?: boolean
+          language?: string
+          name: string
+          original_name?: string | null
+          ranking?: string | null
+          slug: string
+          status?: string
+          type_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          content_json?: Json | null
+          created_at?: string | null
+          external_links?: Json | null
+          id?: number
+          individual_id?: string | null
+          is_original?: boolean
+          language?: string
+          name?: string
+          original_name?: string | null
+          ranking?: string | null
+          slug?: string
+          status?: string
+          type_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "individual_translations_individual_id_fkey"
+            columns: ["individual_id"]
+            isOneToOne: false
+            referencedRelation: "individuals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "individual_translations_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "individual_translations_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      individuals: {
         Row: {
           created_at: string | null
           id: string
@@ -536,82 +690,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "individual_translation_groups_type_id_fkey"
-            columns: ["type_id"]
-            isOneToOne: false
-            referencedRelation: "types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      individuals: {
-        Row: {
-          content: string | null
-          content_json: Json | null
-          created_at: string | null
-          external_links: Json | null
-          id: number
-          is_original: boolean
-          language: string
-          name: string
-          original_name: string | null
-          ranking: string | null
-          slug: string
-          status: string
-          translation_group_id: string | null
-          type_id: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          content?: string | null
-          content_json?: Json | null
-          created_at?: string | null
-          external_links?: Json | null
-          id?: number
-          is_original?: boolean
-          language?: string
-          name: string
-          original_name?: string | null
-          ranking?: string | null
-          slug: string
-          status?: string
-          translation_group_id?: string | null
-          type_id?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          content?: string | null
-          content_json?: Json | null
-          created_at?: string | null
-          external_links?: Json | null
-          id?: number
-          is_original?: boolean
-          language?: string
-          name?: string
-          original_name?: string | null
-          ranking?: string | null
-          slug?: string
-          status?: string
-          translation_group_id?: string | null
-          type_id?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "individuals_language_fkey"
-            columns: ["language"]
-            isOneToOne: false
-            referencedRelation: "languages"
-            referencedColumns: ["code"]
-          },
-          {
-            foreignKeyName: "individuals_translation_group_id_fkey"
-            columns: ["translation_group_id"]
-            isOneToOne: false
-            referencedRelation: "individual_translation_groups"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "individuals_type_id_fkey"
             columns: ["type_id"]
@@ -1066,7 +1144,7 @@ export type Database = {
             foreignKeyName: "timeline_articles_article_id_fkey"
             columns: ["article_id"]
             isOneToOne: false
-            referencedRelation: "articles"
+            referencedRelation: "article_translations"
             referencedColumns: ["id"]
           },
           {
@@ -1080,12 +1158,12 @@ export type Database = {
             foreignKeyName: "timeline_articles_timeline_id_fkey"
             columns: ["timeline_id"]
             isOneToOne: false
-            referencedRelation: "timelines"
+            referencedRelation: "timeline_translations"
             referencedColumns: ["id"]
           },
         ]
       }
-      timelines: {
+      timeline_translations: {
         Row: {
           category_id: number | null
           created_at: string | null
@@ -1096,8 +1174,8 @@ export type Database = {
           language: string | null
           slug: string
           status: string | null
+          timeline_id: string | null
           title: string
-          translation_group_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1110,8 +1188,8 @@ export type Database = {
           language?: string | null
           slug: string
           status?: string | null
+          timeline_id?: string | null
           title: string
-          translation_group_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1124,75 +1202,41 @@ export type Database = {
           language?: string | null
           slug?: string
           status?: string | null
+          timeline_id?: string | null
           title?: string
-          translation_group_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "timelines_category_id_fkey"
+            foreignKeyName: "timeline_translations_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "timelines_language_fkey"
+            foreignKeyName: "timeline_translations_language_fkey"
             columns: ["language"]
             isOneToOne: false
             referencedRelation: "languages"
             referencedColumns: ["code"]
           },
           {
-            foreignKeyName: "timelines_translation_group_id_fkey"
-            columns: ["translation_group_id"]
+            foreignKeyName: "timeline_translations_timeline_id_fkey"
+            columns: ["timeline_id"]
             isOneToOne: false
-            referencedRelation: "translation_groups"
+            referencedRelation: "timelines"
             referencedColumns: ["id"]
           },
         ]
       }
-      translation_group_tags: {
-        Row: {
-          created_at: string | null
-          tag_id: number
-          translation_group_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          tag_id: number
-          translation_group_id: string
-        }
-        Update: {
-          created_at?: string | null
-          tag_id?: number
-          translation_group_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "translation_group_tags_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "translation_group_tags_translation_group_id_fkey"
-            columns: ["translation_group_id"]
-            isOneToOne: false
-            referencedRelation: "translation_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      translation_groups: {
+      timelines: {
         Row: {
           author_id: string | null
           category_id: number | null
           created_at: string | null
           id: string
           image_url: string | null
-          individual_id: number | null
           updated_at: string | null
         }
         Insert: {
@@ -1201,7 +1245,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_url?: string | null
-          individual_id?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -1210,29 +1253,21 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_url?: string | null
-          individual_id?: number | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "translation_groups_author_id_fkey"
+            foreignKeyName: "timelines_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "translation_groups_category_id_fkey"
+            foreignKeyName: "timelines_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "translation_groups_individual_id_fkey"
-            columns: ["individual_id"]
-            isOneToOne: false
-            referencedRelation: "individuals"
             referencedColumns: ["id"]
           },
         ]
@@ -1319,42 +1354,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      whatsapp_messages: {
-        Row: {
-          created_at: string | null
-          delivered_at: string | null
-          from_number: string
-          id: number
-          message: string | null
-          message_id: string
-          read_at: string | null
-          status: string | null
-          type: string
-        }
-        Insert: {
-          created_at?: string | null
-          delivered_at?: string | null
-          from_number: string
-          id?: number
-          message?: string | null
-          message_id: string
-          read_at?: string | null
-          status?: string | null
-          type: string
-        }
-        Update: {
-          created_at?: string | null
-          delivered_at?: string | null
-          from_number?: string
-          id?: number
-          message?: string | null
-          message_id?: string
-          read_at?: string | null
-          status?: string | null
-          type?: string
-        }
-        Relationships: []
       }
     }
     Views: {

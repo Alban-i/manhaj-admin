@@ -1,13 +1,29 @@
-import { GoogleGenAI } from '@google/genai';
-import type { ReferenceImages } from '@/types/image-generator';
+import { generateImage as aiGenerateImage } from 'ai';
+import { createVertex } from '@ai-sdk/google-vertex';
 
-// Initialize the Google GenAI client
-const getClient = () => {
-  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GOOGLE_GENERATIVE_AI_API_KEY is not configured');
+// Create Vertex AI client with service account credentials
+const getVertex = () => {
+  const project = process.env.GOOGLE_VERTEX_PROJECT;
+  const location = process.env.GOOGLE_VERTEX_LOCATION || 'us-central1';
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+
+  if (!project || !clientEmail || !privateKey) {
+    throw new Error(
+      'Google Vertex AI credentials not configured. Required: GOOGLE_VERTEX_PROJECT, GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY'
+    );
   }
-  return new GoogleGenAI({ apiKey });
+
+  return createVertex({
+    project,
+    location,
+    googleAuthOptions: {
+      credentials: {
+        client_email: clientEmail,
+        private_key: privateKey.replace(/\\n/g, '\n'), // Handle escaped newlines
+      },
+    },
+  });
 };
 
 // Available models for image generation
@@ -21,9 +37,14 @@ export const IMAGE_GENERATION_MODELS = {
 export type ImageGenerationModel = keyof typeof IMAGE_GENERATION_MODELS;
 
 // Check if a model supports reference images
+// Note: Reference images with Gemini require a different API approach (text generation with image output)
+// For now, only Imagen models are fully supported via Vertex AI
 export const modelSupportsReferenceImages = (model: ImageGenerationModel): boolean => {
   return model === 'gemini-flash' || model === 'gemini-pro';
 };
+
+// Supported aspect ratios for Imagen models
+export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 
 interface GenerateImageResult {
   success: true;
@@ -41,188 +62,110 @@ export type GenerateImageResponse = GenerateImageResult | GenerateImageError;
 interface ReferenceImageData {
   base64: string;
   mimeType: string;
+  description: string;
 }
 
 interface GenerateImageOptions {
   prompt: string;
   model?: ImageGenerationModel;
-  width?: number;
-  height?: number;
-  referenceImages?: {
-    elements?: ReferenceImageData[];
-    style?: ReferenceImageData[];
-    person?: ReferenceImageData[];
-  };
+  aspectRatio?: AspectRatio;
+  referenceImages?: ReferenceImageData[];
 }
 
 /**
- * Build the enhanced prompt with reference image context
+ * Convert width/height to the closest supported aspect ratio
  */
-function buildPromptWithContext(
-  basePrompt: string,
-  referenceImages?: GenerateImageOptions['referenceImages']
-): string {
-  if (!referenceImages) return basePrompt;
+export function getAspectRatio(width: number, height: number): AspectRatio {
+  const ratio = width / height;
 
-  const contextParts: string[] = [basePrompt];
-  const hasElements = referenceImages.elements && referenceImages.elements.length > 0;
-  const hasStyle = referenceImages.style && referenceImages.style.length > 0;
-  const hasPerson = referenceImages.person && referenceImages.person.length > 0;
+  // Check for common aspect ratios with some tolerance
+  if (Math.abs(ratio - 1) < 0.1) return '1:1';
+  if (Math.abs(ratio - 16 / 9) < 0.15) return '16:9';
+  if (Math.abs(ratio - 9 / 16) < 0.15) return '9:16';
+  if (Math.abs(ratio - 4 / 3) < 0.15) return '4:3';
+  if (Math.abs(ratio - 3 / 4) < 0.15) return '3:4';
 
-  if (hasElements || hasStyle || hasPerson) {
-    contextParts.push('\n\nReference images context:');
-
-    if (hasElements) {
-      contextParts.push(
-        `- Images 1-${referenceImages.elements!.length}: Use elements from these images`
-      );
-    }
-    if (hasStyle) {
-      contextParts.push(
-        `- Style images: Apply the visual style from these images`
-      );
-    }
-    if (hasPerson) {
-      contextParts.push(
-        `- Person images: Include the likeness of these people`
-      );
-    }
-  }
-
-  return contextParts.join('\n');
+  // Default based on orientation
+  return ratio > 1 ? '16:9' : '9:16';
 }
 
 /**
- * Generate an image using Google's Gemini API (for Gemini models with reference images)
- */
-async function generateWithGemini(
-  client: GoogleGenAI,
-  modelId: string,
-  prompt: string,
-  referenceImages?: GenerateImageOptions['referenceImages']
-): Promise<GenerateImageResponse> {
-  // Build contents array with text and reference images
-  const contents: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
-
-  // Add reference images in order: elements → style → person
-  if (referenceImages?.elements) {
-    for (const img of referenceImages.elements) {
-      contents.push({
-        inlineData: {
-          mimeType: img.mimeType,
-          data: img.base64,
-        },
-      });
-    }
-  }
-
-  if (referenceImages?.style) {
-    for (const img of referenceImages.style) {
-      contents.push({
-        inlineData: {
-          mimeType: img.mimeType,
-          data: img.base64,
-        },
-      });
-    }
-  }
-
-  if (referenceImages?.person) {
-    for (const img of referenceImages.person) {
-      contents.push({
-        inlineData: {
-          mimeType: img.mimeType,
-          data: img.base64,
-        },
-      });
-    }
-  }
-
-  // Build enhanced prompt with context
-  const enhancedPrompt = buildPromptWithContext(prompt, referenceImages);
-  contents.push({ text: enhancedPrompt });
-
-  const response = await client.models.generateContent({
-    model: modelId,
-    contents: contents,
-    config: {
-      responseModalities: ['TEXT', 'IMAGE'],
-    },
-  });
-
-  // Extract image data from response
-  const candidates = response.candidates;
-  if (!candidates || candidates.length === 0) {
-    return { success: false, error: 'No response generated' };
-  }
-
-  const parts = candidates[0].content?.parts;
-  if (!parts) {
-    return { success: false, error: 'No content in response' };
-  }
-
-  // Find the image part
-  for (const part of parts) {
-    if (part.inlineData) {
-      return {
-        success: true,
-        base64: part.inlineData.data ?? '',
-        mimeType: part.inlineData.mimeType ?? 'image/png',
-      };
-    }
-  }
-
-  return { success: false, error: 'No image data in response' };
-}
-
-/**
- * Generate an image using Google's Imagen API (text-only)
+ * Generate an image using Google Vertex AI (Imagen models)
  */
 async function generateWithImagen(
-  client: GoogleGenAI,
+  prompt: string,
   modelId: string,
-  prompt: string
+  aspectRatio: AspectRatio
 ): Promise<GenerateImageResponse> {
-  const response = await client.models.generateImages({
-    model: modelId,
-    prompt: prompt,
-    config: {
-      numberOfImages: 1,
-    },
-  });
+  try {
+    const vertex = getVertex();
 
-  // Extract image data from response
-  const images = response.generatedImages;
-  if (!images || images.length === 0) {
-    return { success: false, error: 'No images generated' };
+    const result = await aiGenerateImage({
+      model: vertex.image(modelId),
+      prompt,
+      aspectRatio,
+      providerOptions: {
+        vertex: {
+          personGeneration: 'dont_allow',
+        },
+      },
+    });
+
+    const image = result.images[0];
+    if (!image) {
+      return { success: false, error: 'No image generated' };
+    }
+
+    return {
+      success: true,
+      base64: image.base64,
+      mimeType: 'mimeType' in image ? (image.mimeType as string) : 'image/png',
+    };
+  } catch (error) {
+    console.error('Imagen API error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Friendly error messages
+    if (errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('403')) {
+      return {
+        success: false,
+        error: 'Service account lacks Vertex AI permissions. Grant "Vertex AI User" role.',
+      };
+    }
+    if (errorMessage.includes('NOT_FOUND') || errorMessage.includes('404')) {
+      return {
+        success: false,
+        error: 'Model not found. Ensure Vertex AI API is enabled in your Google Cloud project.',
+      };
+    }
+    if (errorMessage.includes('INVALID_ARGUMENT')) {
+      return {
+        success: false,
+        error: 'Invalid prompt or parameters. Check prompt content and length.',
+      };
+    }
+    if (errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('429')) {
+      return { success: false, error: 'API quota exceeded. Try again later.' };
+    }
+
+    return { success: false, error: errorMessage };
   }
-
-  const image = images[0].image;
-  if (!image || !image.imageBytes) {
-    return { success: false, error: 'No image data in response' };
-  }
-
-  return {
-    success: true,
-    base64: image.imageBytes,
-    mimeType: 'image/png',
-  };
 }
 
 /**
- * Generate an image using Google's Gemini/Imagen API
- * @param options - Generation options including prompt, model, dimensions, and reference images
+ * Generate an image using Google's Vertex AI
+ * @param options - Generation options including prompt, model, aspectRatio, and reference images
  */
 export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse>;
 
 /**
- * Generate an image using Google's Gemini/Imagen API
+ * Generate an image using Google's Vertex AI
  * @param prompt - The text prompt describing the image to generate
  * @param model - The model to use
- * @param width - Desired image width (used for aspect ratio calculation)
- * @param height - Desired image height (used for aspect ratio calculation)
+ * @param width - Desired image width (converted to aspect ratio)
+ * @param height - Desired image height (converted to aspect ratio)
  * @deprecated Use the options object signature instead
  */
 export async function generateImage(
@@ -239,30 +182,45 @@ export async function generateImage(
   height: number = 630
 ): Promise<GenerateImageResponse> {
   // Normalize arguments
-  const options: GenerateImageOptions =
-    typeof promptOrOptions === 'string'
-      ? { prompt: promptOrOptions, model, width, height }
-      : promptOrOptions;
+  let options: GenerateImageOptions;
+
+  if (typeof promptOrOptions === 'string') {
+    options = {
+      prompt: promptOrOptions,
+      model,
+      aspectRatio: getAspectRatio(width, height),
+    };
+  } else {
+    options = promptOrOptions;
+  }
 
   const {
     prompt,
     model: selectedModel = 'nano-banana',
+    aspectRatio = '16:9',
     referenceImages,
   } = options;
 
-  try {
-    const client = getClient();
-    const modelId = IMAGE_GENERATION_MODELS[selectedModel];
-    const isGeminiModel = modelSupportsReferenceImages(selectedModel);
+  const modelId = IMAGE_GENERATION_MODELS[selectedModel];
+  const isGeminiModel = modelSupportsReferenceImages(selectedModel);
 
-    if (isGeminiModel) {
-      return await generateWithGemini(client, modelId, prompt, referenceImages);
-    } else {
-      return await generateWithImagen(client, modelId, prompt);
-    }
-  } catch (error) {
-    console.error('Error generating image:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error occurred';
-    return { success: false, error: message };
+  // Gemini models with reference images are not yet supported via AI SDK
+  // They require a different approach using text generation with image output
+  if (isGeminiModel && referenceImages && referenceImages.length > 0) {
+    return {
+      success: false,
+      error:
+        'Reference images with Gemini models are not yet supported. Use Imagen models (nano-banana or nano-banana-pro) for text-to-image generation.',
+    };
   }
+
+  // For Gemini models without reference images, fall back to Imagen
+  if (isGeminiModel) {
+    console.warn(
+      'Gemini image generation is not supported via Vertex AI SDK. Falling back to Imagen model.'
+    );
+    return generateWithImagen(prompt, IMAGE_GENERATION_MODELS['nano-banana-pro'], aspectRatio);
+  }
+
+  return generateWithImagen(prompt, modelId, aspectRatio);
 }

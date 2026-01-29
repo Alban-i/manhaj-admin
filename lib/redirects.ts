@@ -8,7 +8,7 @@ export async function getArticleSlugById(id: string): Promise<string | null> {
   const supabase = await createClient();
   
   const { data, error } = await supabase
-    .from('articles')
+    .from('article_translations')
     .select('slug')
     .eq('id', id)
     .single();
@@ -99,7 +99,7 @@ export async function getIndividualSlugById(id: string): Promise<string | null> 
   const supabase = await createClient();
   
   const { data, error } = await supabase
-    .from('individuals')
+    .from('individual_translations')
     .select('slug')
     .eq('id', parseInt(id))
     .single();

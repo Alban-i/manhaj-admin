@@ -23,7 +23,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Save, Loader2, Sparkles, Plus, X, ImageIcon, Palette, User, DollarSign } from 'lucide-react';
+import { Trash2, Save, Loader2, Sparkles, Plus, X, DollarSign, ImagePlus } from 'lucide-react';
 import {
   ImageProjectWithRelations,
   ImagePresetWithCreator,
@@ -34,7 +34,7 @@ import {
   FONT_FAMILIES,
   AIGenerationModel,
   AI_MODEL_OPTIONS,
-  ReferenceImageType,
+  ReferenceImageRow,
 } from '@/types/image-generator';
 import createImageProject from '@/actions/image-generator/projects/create-project';
 import updateImageProject from '@/actions/image-generator/projects/update-project';
@@ -53,19 +53,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Slider } from '@/components/ui/slider';
 import ImagePreview from './image-preview';
-
-interface ReferenceImageItem {
-  id: string;
-  url: string;
-  base64?: string;
-  mimeType?: string;
-}
-
-interface ReferenceImagesState {
-  elements: ReferenceImageItem[];
-  style: ReferenceImageItem[];
-  person: ReferenceImageItem[];
-}
 
 interface ProjectEditorProps {
   project: ImageProjectWithRelations | null;
@@ -94,18 +81,12 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
   const [sizePreset, setSizePreset] = useState<string>('custom');
   const [textContent, setTextContent] = useState(project?.text_content ?? '');
 
-  // Reference images state
-  const [referenceImages, setReferenceImages] = useState<ReferenceImagesState>({
-    elements: [],
-    style: [],
-    person: [],
-  });
-  const [uploadingType, setUploadingType] = useState<ReferenceImageType | null>(null);
+  // Reference images state - flexible rows with descriptions
+  const [referenceImages, setReferenceImages] = useState<ReferenceImageRow[]>([]);
+  const [uploadingRowId, setUploadingRowId] = useState<string | null>(null);
 
-  // File input refs
-  const elementsInputRef = useRef<HTMLInputElement>(null);
-  const styleInputRef = useRef<HTMLInputElement>(null);
-  const personInputRef = useRef<HTMLInputElement>(null);
+  // File input refs - stored by row id
+  const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
   // Text config state
   const existingTextConfig = project?.text_config as unknown as TextConfig | undefined;
@@ -119,11 +100,8 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
   const supportsReferenceImages = selectedModelConfig?.supportsReferenceImages ?? false;
   const maxReferenceImages = selectedModelConfig?.maxReferenceImages ?? 0;
 
-  // Calculate total reference images count
-  const totalReferenceImages =
-    referenceImages.elements.length +
-    referenceImages.style.length +
-    referenceImages.person.length;
+  // Calculate total reference images count (only rows with actual images)
+  const totalReferenceImages = referenceImages.filter((row) => row.base64).length;
 
   // Initialize size preset based on current dimensions
   useEffect(() => {
@@ -140,7 +118,7 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
   // Clear reference images when switching to a model that doesn't support them
   useEffect(() => {
     if (!supportsReferenceImages) {
-      setReferenceImages({ elements: [], style: [], person: [] });
+      setReferenceImages([]);
     }
   }, [supportsReferenceImages]);
 
@@ -184,10 +162,10 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
     }
   };
 
-  // Handle file upload for reference images
+  // Handle file upload for a reference image row
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    type: ReferenceImageType
+    rowId: string
   ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -198,13 +176,7 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       return;
     }
 
-    // Check if we've reached the max
-    if (totalReferenceImages >= maxReferenceImages) {
-      toast.error(t('maxImagesReached'));
-      return;
-    }
-
-    setUploadingType(type);
+    setUploadingRowId(rowId);
 
     try {
       // Read file as base64
@@ -213,42 +185,71 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
         const result = e.target?.result as string;
         const base64 = result.split(',')[1]; // Remove data:image/...;base64, prefix
 
-        const newImage: ReferenceImageItem = {
-          id: crypto.randomUUID(),
-          url: result, // For preview
-          base64,
-          mimeType: file.type,
-        };
+        setReferenceImages((prev) =>
+          prev.map((row) =>
+            row.id === rowId
+              ? { ...row, url: result, base64, mimeType: file.type }
+              : row
+          )
+        );
 
-        setReferenceImages((prev) => ({
-          ...prev,
-          [type]: [...prev[type], newImage],
-        }));
-
-        setUploadingType(null);
+        setUploadingRowId(null);
       };
 
       reader.onerror = () => {
         toast.error('Failed to read file');
-        setUploadingType(null);
+        setUploadingRowId(null);
       };
 
       reader.readAsDataURL(file);
     } catch {
       toast.error('Failed to upload image');
-      setUploadingType(null);
+      setUploadingRowId(null);
     }
 
     // Reset the input
     event.target.value = '';
   };
 
-  // Remove a reference image
-  const removeReferenceImage = (type: ReferenceImageType, id: string) => {
-    setReferenceImages((prev) => ({
-      ...prev,
-      [type]: prev[type].filter((img) => img.id !== id),
-    }));
+  // Add a new reference image row
+  const addReferenceImageRow = () => {
+    if (referenceImages.length >= maxReferenceImages) {
+      toast.error(t('maxImagesReached'));
+      return;
+    }
+
+    const newRow: ReferenceImageRow = {
+      id: crypto.randomUUID(),
+      url: '',
+      description: '',
+    };
+    setReferenceImages((prev) => [...prev, newRow]);
+  };
+
+  // Remove a reference image row
+  const removeReferenceImageRow = (rowId: string) => {
+    setReferenceImages((prev) => prev.filter((row) => row.id !== rowId));
+    fileInputRefs.current.delete(rowId);
+  };
+
+  // Update description for a row
+  const updateRowDescription = (rowId: string, description: string) => {
+    setReferenceImages((prev) =>
+      prev.map((row) =>
+        row.id === rowId ? { ...row, description } : row
+      )
+    );
+  };
+
+  // Clear image from a row (keep description)
+  const clearRowImage = (rowId: string) => {
+    setReferenceImages((prev) =>
+      prev.map((row) =>
+        row.id === rowId
+          ? { ...row, url: '', base64: undefined, mimeType: undefined }
+          : row
+      )
+    );
   };
 
   const handleSave = async () => {
@@ -326,19 +327,15 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
 
     setIsGenerating(true);
     try {
-      // Prepare reference images data for API
+      // Prepare reference images data for API (only rows with images)
       const refImagesData = supportsReferenceImages
-        ? {
-            elements: referenceImages.elements
-              .filter((img) => img.base64 && img.mimeType)
-              .map((img) => ({ base64: img.base64!, mimeType: img.mimeType! })),
-            style: referenceImages.style
-              .filter((img) => img.base64 && img.mimeType)
-              .map((img) => ({ base64: img.base64!, mimeType: img.mimeType! })),
-            person: referenceImages.person
-              .filter((img) => img.base64 && img.mimeType)
-              .map((img) => ({ base64: img.base64!, mimeType: img.mimeType! })),
-          }
+        ? referenceImages
+            .filter((row) => row.base64 && row.mimeType && row.description.trim())
+            .map((row) => ({
+              base64: row.base64!,
+              mimeType: row.mimeType!,
+              description: row.description.trim(),
+            }))
         : undefined;
 
       const result = await generateBackground({
@@ -347,7 +344,7 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
         model: aiModel,
         width,
         height,
-        referenceImages: refImagesData,
+        referenceImages: refImagesData && refImagesData.length > 0 ? refImagesData : undefined,
       });
 
       if (result.success && result.imageUrl) {
@@ -363,73 +360,79 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
     }
   };
 
-  // Render reference image upload section
-  const renderReferenceImageSection = (
-    type: ReferenceImageType,
-    icon: React.ReactNode,
-    titleKey: string,
-    descriptionKey: string,
-    inputRef: React.RefObject<HTMLInputElement | null>
-  ) => {
-    const images = referenceImages[type];
-    const canAddMore = totalReferenceImages < maxReferenceImages;
-    const isUploading = uploadingType === type;
+  // Render a single reference image row
+  const renderReferenceImageRow = (row: ReferenceImageRow, index: number) => {
+    const isUploading = uploadingRowId === row.id;
+    const hasImage = !!row.base64;
 
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          {icon}
-          <div>
-            <Label className="text-sm font-medium">{t(titleKey)}</Label>
-            <p className="text-xs text-muted-foreground">{t(descriptionKey)}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {/* Existing images */}
-          {images.map((img) => (
-            <div
-              key={img.id}
-              className="relative w-16 h-16 rounded-md overflow-hidden border bg-muted"
-            >
+      <div key={row.id} className="flex gap-3 items-start">
+        {/* Image upload area */}
+        <div className="relative shrink-0">
+          {hasImage ? (
+            <div className="relative w-20 h-20 rounded-md overflow-hidden border bg-muted">
               <img
-                src={img.url}
+                src={row.url}
                 alt=""
                 className="w-full h-full object-cover"
               />
               <button
                 type="button"
-                onClick={() => removeReferenceImage(type, img.id)}
+                onClick={() => clearRowImage(row.id)}
                 className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 <X className="h-3 w-3" />
               </button>
             </div>
-          ))}
-
-          {/* Add button */}
-          {canAddMore && (
+          ) : (
             <button
               type="button"
-              onClick={() => inputRef.current?.click()}
+              onClick={() => fileInputRefs.current.get(row.id)?.click()}
               disabled={isUploading}
-              className="w-16 h-16 rounded-md border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 flex items-center justify-center transition-colors disabled:opacity-50"
+              className="w-20 h-20 rounded-md border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 flex items-center justify-center transition-colors disabled:opacity-50"
             >
               {isUploading ? (
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               ) : (
-                <Plus className="h-5 w-5 text-muted-foreground" />
+                <ImagePlus className="h-5 w-5 text-muted-foreground" />
               )}
             </button>
           )}
-
           {/* Hidden file input */}
           <input
-            ref={inputRef}
+            ref={(el) => {
+              if (el) {
+                fileInputRefs.current.set(row.id, el);
+              }
+            }}
             type="file"
             accept="image/*"
             className="hidden"
-            onChange={(e) => handleFileUpload(e, type)}
+            onChange={(e) => handleFileUpload(e, row.id)}
           />
+        </div>
+
+        {/* Description textarea */}
+        <div className="flex-1 space-y-1">
+          <Textarea
+            value={row.description}
+            onChange={(e) => updateRowDescription(row.id, e.target.value)}
+            placeholder={t('descriptionPlaceholder')}
+            rows={2}
+            className="text-sm resize-none"
+          />
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">
+              {t('imageNumber', { number: index + 1 })}
+            </span>
+            <button
+              type="button"
+              onClick={() => removeReferenceImageRow(row.id)}
+              className="text-xs text-destructive hover:text-destructive/80"
+            >
+              {t('removeRow')}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -480,9 +483,9 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left Column - Controls */}
-        <div className="space-y-6">
+      <div className="space-y-6">
+        {/* Row 1: Project Settings + Dimensions side by side */}
+        <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>{t('projectSettings')}</CardTitle>
@@ -570,8 +573,10 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          <Card>
+        {/* Row 2: Generation Config - Full Width */}
+        <Card>
             <CardHeader>
               <CardTitle>{t('generationConfig')}</CardTitle>
               <CardDescription>{t('generationConfigDescription')}</CardDescription>
@@ -626,28 +631,23 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
                     </p>
                   </div>
 
-                  {renderReferenceImageSection(
-                    'elements',
-                    <ImageIcon className="h-4 w-4 text-blue-500" />,
-                    'elementsImages',
-                    'elementsImagesDescription',
-                    elementsInputRef
-                  )}
+                  {/* Reference image rows */}
+                  <div className="space-y-4">
+                    {referenceImages.map((row, index) => renderReferenceImageRow(row, index))}
+                  </div>
 
-                  {renderReferenceImageSection(
-                    'style',
-                    <Palette className="h-4 w-4 text-purple-500" />,
-                    'styleImages',
-                    'styleImagesDescription',
-                    styleInputRef
-                  )}
-
-                  {renderReferenceImageSection(
-                    'person',
-                    <User className="h-4 w-4 text-green-500" />,
-                    'personImages',
-                    'personImagesDescription',
-                    personInputRef
+                  {/* Add row button */}
+                  {referenceImages.length < maxReferenceImages && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addReferenceImageRow}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('addRow')}
+                    </Button>
                   )}
                 </div>
               )}
@@ -688,22 +688,43 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('textOverlay')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="textContent">{t('textContent')}</Label>
-                <Textarea
-                  id="textContent"
-                  value={textContent}
-                  onChange={(e) => setTextContent(e.target.value)}
-                  placeholder={t('textContentPlaceholder')}
-                  rows={3}
-                />
-              </div>
+        {/* Row 3: Preview - Full Width */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('preview')}</CardTitle>
+            <CardDescription>
+              {width}x{height}px
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ImagePreview
+              width={width}
+              height={height}
+              textContent={textContent}
+              textConfig={textConfig}
+              backgroundImageUrl={backgroundImageUrl}
+            />
+          </CardContent>
+        </Card>
 
+        {/* Row 4: Text Overlay - Full Width */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('textOverlay')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="textContent">{t('textContent')}</Label>
+              <Textarea
+                id="textContent"
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                placeholder={t('textContentPlaceholder')}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label>{t('fontFamily')}</Label>
                 <Select
@@ -726,6 +747,44 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
               </div>
 
               <div className="space-y-2">
+                <Label>{t('position')}</Label>
+                <Select
+                  value={textConfig.position}
+                  onValueChange={(value) =>
+                    setTextConfig({ ...textConfig, position: value as TextConfig['position'] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="top">{t('positionTop')}</SelectItem>
+                    <SelectItem value="center">{t('positionCenter')}</SelectItem>
+                    <SelectItem value="bottom">{t('positionBottom')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('alignment')}</Label>
+                <Select
+                  value={textConfig.alignment}
+                  onValueChange={(value) =>
+                    setTextConfig({ ...textConfig, alignment: value as TextConfig['alignment'] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="left">{t('alignLeft')}</SelectItem>
+                    <SelectItem value="center">{t('alignCenter')}</SelectItem>
+                    <SelectItem value="right">{t('alignRight')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label>{t('fontSize')}: {textConfig.fontSize}px</Label>
                 <Slider
                   value={[textConfig.fontSize]}
@@ -735,49 +794,12 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
                   min={12}
                   max={120}
                   step={1}
+                  className="mt-3"
                 />
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t('position')}</Label>
-                  <Select
-                    value={textConfig.position}
-                    onValueChange={(value) =>
-                      setTextConfig({ ...textConfig, position: value as TextConfig['position'] })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="top">{t('positionTop')}</SelectItem>
-                      <SelectItem value="center">{t('positionCenter')}</SelectItem>
-                      <SelectItem value="bottom">{t('positionBottom')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{t('alignment')}</Label>
-                  <Select
-                    value={textConfig.alignment}
-                    onValueChange={(value) =>
-                      setTextConfig({ ...textConfig, alignment: value as TextConfig['alignment'] })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="left">{t('alignLeft')}</SelectItem>
-                      <SelectItem value="center">{t('alignCenter')}</SelectItem>
-                      <SelectItem value="right">{t('alignRight')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>{t('textColor')}</Label>
                 <div className="flex gap-2">
@@ -830,32 +852,12 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
                   min={0}
                   max={100}
                   step={5}
+                  className="mt-3"
                 />
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Preview */}
-        <div className="lg:sticky lg:top-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('preview')}</CardTitle>
-              <CardDescription>
-                {width}x{height}px
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ImagePreview
-                width={width}
-                height={height}
-                textContent={textContent}
-                textConfig={textConfig}
-                backgroundImageUrl={backgroundImageUrl}
-              />
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

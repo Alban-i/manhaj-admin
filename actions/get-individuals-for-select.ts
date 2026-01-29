@@ -11,7 +11,7 @@ export default async function getIndividualsForSelect(): Promise<IndividualOptio
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('individuals')
+    .from('individual_translations')
     .select(
       `
       id,

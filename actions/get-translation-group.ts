@@ -1,51 +1,54 @@
 import { createClient } from '@/providers/supabase/server';
 
-export interface TranslationGroupData {
+export interface ArticleMetadataData {
   id: string;
   author_id: string | null;
   category_id: number | null;
-  individual_translation_group_id: string | null;
+  individual_id: string | null;
   image_url: string | null;
   tags: number[];
 }
 
+// Legacy alias for compatibility
+export type TranslationGroupData = ArticleMetadataData;
+
 export default async function getTranslationGroup(
-  translationGroupId: string | null
-): Promise<TranslationGroupData | null> {
-  if (!translationGroupId) {
+  articleId: string | null
+): Promise<ArticleMetadataData | null> {
+  if (!articleId) {
     return null;
   }
 
   const supabase = await createClient();
 
-  // Get translation group data
-  const { data: group, error: groupError } = await supabase
-    .from('translation_groups')
-    .select('id, author_id, category_id, individual_translation_group_id, image_url')
-    .eq('id', translationGroupId)
+  // Get article metadata
+  const { data: article, error: articleError } = await supabase
+    .from('articles')
+    .select('id, author_id, category_id, individual_id, image_url')
+    .eq('id', articleId)
     .single();
 
-  if (groupError || !group) {
-    console.error('Error fetching translation group:', groupError);
+  if (articleError || !article) {
+    console.error('Error fetching article metadata:', articleError);
     return null;
   }
 
-  // Get tags for this translation group
+  // Get tags for this article
   const { data: tags, error: tagsError } = await supabase
-    .from('translation_group_tags')
+    .from('article_group_tags')
     .select('tag_id')
-    .eq('translation_group_id', translationGroupId);
+    .eq('article_id', articleId);
 
   if (tagsError) {
-    console.error('Error fetching translation group tags:', tagsError);
+    console.error('Error fetching article tags:', tagsError);
     return {
-      ...group,
+      ...article,
       tags: [],
     };
   }
 
   return {
-    ...group,
+    ...article,
     tags: tags.map((t) => t.tag_id),
   };
 }

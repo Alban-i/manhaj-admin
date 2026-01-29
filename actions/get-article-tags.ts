@@ -5,12 +5,12 @@ export default async function getArticleTags(identifier: string) {
 
   const supabase = await createClient();
 
-  // First get the article to find its translation_group_id
+  // First get the article translation to find its article_id
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
 
   let query = supabase
-    .from('articles')
-    .select('id, translation_group_id');
+    .from('article_translations')
+    .select('id, article_id');
 
   if (isUuid) {
     query = query.eq('id', identifier);
@@ -25,22 +25,22 @@ export default async function getArticleTags(identifier: string) {
     return [];
   }
 
-  // If article has translation_group_id, get tags from translation_group_tags
-  if (article.translation_group_id) {
+  // If article has article_id, get tags from article_group_tags
+  if (article.article_id) {
     const { data, error } = await supabase
-      .from('translation_group_tags')
+      .from('article_group_tags')
       .select('tag_id')
-      .eq('translation_group_id', article.translation_group_id);
+      .eq('article_id', article.article_id);
 
     if (error) {
-      console.error('Error fetching translation group tags:', error);
+      console.error('Error fetching article group tags:', error);
       return [];
     }
 
     return data.map((row) => row.tag_id);
   }
 
-  // Fallback to article_tags for backward compatibility (articles without translation_group_id)
+  // Fallback to article_tags for backward compatibility
   const { data, error } = await supabase
     .from('article_tags')
     .select('tag_id')

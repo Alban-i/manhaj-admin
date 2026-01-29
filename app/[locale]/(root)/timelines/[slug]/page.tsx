@@ -31,17 +31,17 @@ const TimelinePage = async ({ params, searchParams }: TimelinePageProps) => {
   // Handle translation creation params
   const translationParams = {
     translateFrom: query.translate_from as string | undefined,
-    translationGroupId: query.translation_group_id as string | undefined,
+    timelineId: query.timeline_id as string | undefined,
     language: query.language as string | undefined,
     slug: query.slug as string | undefined,
     categoryId: query.category_id as string | undefined,
   };
 
-  // Fetch translations if timeline exists and has a translation_group_id
-  const translations = timeline?.translation_group_id
-    ? await getTimelineTranslations(timeline.translation_group_id)
-    : translationParams.translationGroupId
-      ? await getTimelineTranslations(translationParams.translationGroupId)
+  // Fetch translations if timeline exists and has a timeline_id
+  const translations = timeline?.timeline_id
+    ? await getTimelineTranslations(timeline.timeline_id)
+    : translationParams.timelineId
+      ? await getTimelineTranslations(translationParams.timelineId)
       : [];
 
   // If creating a new translation, pre-fill with basic data
@@ -54,7 +54,7 @@ const TimelinePage = async ({ params, searchParams }: TimelinePageProps) => {
     id: undefined,
     image_url: null,
     language: translationParams.language ?? 'ar',
-    translation_group_id: translationParams.translationGroupId ?? null,
+    timeline_id: translationParams.timelineId ?? null,
     is_original: false,
     created_at: null,
     updated_at: null,

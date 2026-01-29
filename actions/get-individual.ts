@@ -1,7 +1,7 @@
 import { createClient } from '@/providers/supabase/server';
 import { Tables } from '@/types/types_db';
 
-export type IndividualWithType = Tables<'individuals'> & {
+export type IndividualWithType = Tables<'individual_translations'> & {
   types?: {
     id: number;
     name: string;
@@ -19,7 +19,7 @@ const getIndividual = async (
 
   // Try to fetch by slug first, fallback to ID for backward compatibility
   let query = supabase
-    .from('individuals')
+    .from('individual_translations')
     .select(`
       *,
       types:type_id (

@@ -10,9 +10,9 @@ export interface IndividualTranslation {
 }
 
 export default async function getIndividualTranslations(
-  translationGroupId: string | null
+  individualId: string | null
 ): Promise<IndividualTranslation[]> {
-  if (!translationGroupId) {
+  if (!individualId) {
     return [];
   }
 
@@ -20,9 +20,9 @@ export default async function getIndividualTranslations(
 
   try {
     const { data, error } = await supabase
-      .from('individuals')
+      .from('individual_translations')
       .select('id, name, slug, language, is_original, status')
-      .eq('translation_group_id', translationGroupId)
+      .eq('individual_id', individualId)
       .order('is_original', { ascending: false });
 
     if (error) {

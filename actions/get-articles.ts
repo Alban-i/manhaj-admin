@@ -4,7 +4,7 @@ import { Articles } from '@/types/types';
 const getArticles = async (): Promise<Articles[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('articles')
+    .from('article_translations')
     .select(`*`)
     .order('title', { ascending: true });
 

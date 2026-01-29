@@ -1,32 +1,35 @@
 import { createClient } from '@/providers/supabase/server';
 
-export interface IndividualTranslationGroupData {
+export interface IndividualMetadataData {
   id: string;
   type_id: number | null;
   original_name: string | null;
   ranking: string | null;
 }
 
+// Legacy alias for compatibility
+export type IndividualTranslationGroupData = IndividualMetadataData;
+
 export default async function getIndividualTranslationGroup(
-  translationGroupId: string | null
-): Promise<IndividualTranslationGroupData | null> {
-  if (!translationGroupId) {
+  individualId: string | null
+): Promise<IndividualMetadataData | null> {
+  if (!individualId) {
     return null;
   }
 
   const supabase = await createClient();
 
-  // Get translation group data
-  const { data: group, error: groupError } = await supabase
-    .from('individual_translation_groups')
+  // Get individual metadata
+  const { data: individual, error: individualError } = await supabase
+    .from('individuals')
     .select('id, type_id, original_name, ranking')
-    .eq('id', translationGroupId)
+    .eq('id', individualId)
     .single();
 
-  if (groupError || !group) {
-    console.error('Error fetching individual translation group:', groupError);
+  if (individualError || !individual) {
+    console.error('Error fetching individual metadata:', individualError);
     return null;
   }
 
-  return group;
+  return individual;
 }

@@ -2,17 +2,12 @@
 
 import { createClient } from '@/providers/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { ImageGenerationModel } from '@/lib/google-genai';
+import { generateImage, getAspectRatio, ImageGenerationModel } from '@/lib/google-genai';
 
 interface ReferenceImageData {
   base64: string;
   mimeType: string;
-}
-
-interface ReferenceImagesData {
-  elements?: ReferenceImageData[];
-  style?: ReferenceImageData[];
-  person?: ReferenceImageData[];
+  description: string;
 }
 
 interface GenerateBackgroundParams {
@@ -21,13 +16,41 @@ interface GenerateBackgroundParams {
   model: ImageGenerationModel;
   width: number;
   height: number;
-  referenceImages?: ReferenceImagesData;
+  referenceImages?: ReferenceImageData[];
 }
 
 interface GenerateBackgroundResult {
   success: boolean;
   imageUrl?: string;
   error?: string;
+}
+
+async function uploadToCloudinary(base64: string, mimeType: string): Promise<string> {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = 'markazshaafii';
+
+  if (!cloudName) {
+    throw new Error('Cloudinary cloud name not configured');
+  }
+
+  const dataUri = `data:${mimeType};base64,${base64}`;
+  const formData = new FormData();
+  formData.append('file', dataUri);
+  formData.append('upload_preset', uploadPreset);
+  formData.append('folder', 'image-generator');
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: 'POST', body: formData }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to upload to Cloudinary');
+  }
+
+  const data = await response.json();
+  return data.secure_url;
 }
 
 const generateBackground = async (
@@ -45,24 +68,20 @@ const generateBackground = async (
   }
 
   try {
-    // Get the base URL from environment or construct it
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-    // Call the API route to generate and upload the image
-    const response = await fetch(`${baseUrl}/api/ai/generate-image`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prompt, model, width, height, referenceImages }),
+    // Generate image directly using Google Vertex AI
+    const result = await generateImage({
+      prompt,
+      model,
+      aspectRatio: getAspectRatio(width, height),
+      referenceImages,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      return { success: false, error: errorData.error || 'Failed to generate image' };
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
 
-    const { imageUrl } = await response.json();
+    // Upload to Cloudinary
+    const imageUrl = await uploadToCloudinary(result.base64, result.mimeType);
 
     // Update the project with the generated background URL
     const supabase = await createClient();

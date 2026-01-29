@@ -13,16 +13,16 @@ const getArticle = async (
   // Check if identifier looks like a UUID (backward compatibility)
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
 
-  // Fetch article with translation_groups join for shared data
+  // Fetch article translation with articles metadata join for shared data
   let query = supabase
-    .from('articles')
+    .from('article_translations')
     .select(`
       *,
-      translation_groups (
+      articles (
         author_id,
         category_id,
         image_url,
-        individual_translation_group_id
+        individual_id
       )
     `);
 
@@ -41,16 +41,16 @@ const getArticle = async (
 
   if (!data) return null;
 
-  // Get shared data from translation_groups, fallback to article data for backward compatibility
-  const translationGroup = data.translation_groups as { author_id: string | null; category_id: number | null; image_url: string | null; individual_translation_group_id: string | null } | null;
+  // Get shared data from articles metadata, fallback to article data for backward compatibility
+  const articleMetadata = data.articles as { author_id: string | null; category_id: number | null; image_url: string | null; individual_id: string | null } | null;
 
   return {
     ...data,
-    // Use translation_groups data if available, otherwise fallback to article data
-    author_id: translationGroup?.author_id ?? data.author_id,
-    category_id: (translationGroup?.category_id ?? data.category_id)?.toString() || null,
-    image_url: translationGroup?.image_url ?? data.image_url,
-    individual_translation_group_id: translationGroup?.individual_translation_group_id ?? null,
+    // Use articles metadata if available, otherwise fallback to article data
+    author_id: articleMetadata?.author_id ?? data.author_id,
+    category_id: (articleMetadata?.category_id ?? data.category_id)?.toString() || null,
+    image_url: articleMetadata?.image_url ?? data.image_url,
+    individual_id: articleMetadata?.individual_id ?? null,
     is_published: data.status.toLowerCase() === 'published',
   };
 };

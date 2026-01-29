@@ -5,7 +5,7 @@ const IndividualsPage = async () => {
   const supabase = await createClient();
 
   const { data: individuals, error } = await supabase
-    .from('individuals')
+    .from('individual_translations')
     .select(
       `
       *,

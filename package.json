@@ -11,8 +11,8 @@
     "update:audio-urls": "tsx scripts/update-article-audio-urls.ts"
   },
   "dependencies": {
+    "@ai-sdk/google-vertex": "^4.0.35",
     "@floating-ui/dom": "^1.7.4",
-    "@google/genai": "^1.38.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -59,6 +59,7 @@
     "@tiptap/pm": "3.17.1",
     "@tiptap/react": "3.17.1",
     "@tiptap/starter-kit": "3.17.1",
+    "ai": "^6.0.59",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

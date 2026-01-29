@@ -50,21 +50,21 @@ const updateArticleAudioUrls = async () => {
     
     console.log(`Found ${urlMappings.length} audio URL mappings.`);
     
-    // 3. Get all articles
+    // 3. Get all article translations
     const { data: articles, error: articlesError } = await supabase
-      .from('articles')
+      .from('article_translations')
       .select('id, content, title');
-    
+
     if (articlesError) {
       throw articlesError;
     }
-    
+
     if (!articles || articles.length === 0) {
-      console.log('No articles found.');
+      console.log('No article translations found.');
       return;
     }
-    
-    console.log(`Processing ${articles.length} articles...`);
+
+    console.log(`Processing ${articles.length} article translations...`);
     
     // 4. Update each article's content
     let updatedCount = 0;
@@ -83,10 +83,10 @@ const updateArticleAudioUrls = async () => {
         }
       }
       
-      // Update the article if changes were made
+      // Update the article translation if changes were made
       if (hasChanges) {
         const { error: updateError } = await supabase
-          .from('articles')
+          .from('article_translations')
           .update({ content: updatedContent })
           .eq('id', article.id);
         

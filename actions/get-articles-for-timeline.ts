@@ -16,7 +16,7 @@ export interface ArticleForTimeline {
 const getArticlesForTimeline = async (): Promise<ArticleForTimeline[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('articles')
+    .from('article_translations')
     .select(`
       id,
       title,
