@@ -4,6 +4,7 @@ import {
   Heading3,
   Bold,
   Italic,
+  Underline,
   List,
   ListOrdered,
   TextQuote,
@@ -86,6 +87,17 @@ const baseCommands: SlashCommand[] = [
     keywords: ['italic', 'em', 'italique'],
     command: (editor, range) => {
       editor.chain().focus().deleteRange(range).toggleItalic().run();
+    },
+  },
+  {
+    id: 'underline',
+    label: 'Underline',
+    description: 'Underline text',
+    icon: Underline,
+    category: 'formatting',
+    keywords: ['underline', 'u', 'souligner'],
+    command: (editor, range) => {
+      editor.chain().focus().deleteRange(range).toggleUnderline().run();
     },
   },
   {

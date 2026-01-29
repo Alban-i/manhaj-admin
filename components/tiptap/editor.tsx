@@ -4,6 +4,7 @@ import { CharacterCount, Placeholder } from '@tiptap/extensions';
 import Document from '@tiptap/extension-document';
 import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
+import Underline from '@tiptap/extension-underline';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Typography from '@tiptap/extension-typography';
 import { EditorView } from '@tiptap/pm/view';
@@ -42,6 +43,7 @@ import {
   Table as TableIcon,
   Trash2,
   Twitter,
+  Underline as UnderlineIcon,
 } from 'lucide-react';
 import { CldUploadWidget } from 'next-cloudinary';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -132,6 +134,7 @@ export default function Editor({
         content: 'block+ footnotesV2?',
       }),
       Highlight,
+      Underline,
       Typography,
       Link,
       CustomImageExtension.configure({
@@ -450,6 +453,15 @@ export default function Editor({
             title="Italic (Ctrl+I)"
           >
             <Italic className="h-4 w-4" />
+          </Toggle>
+          <Toggle
+            pressed={editor.isActive('underline')}
+            onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
+            size="sm"
+            variant="outline"
+            title="Underline (Ctrl+U)"
+          >
+            <UnderlineIcon className="h-4 w-4" />
           </Toggle>
         </ButtonGroup>
 
