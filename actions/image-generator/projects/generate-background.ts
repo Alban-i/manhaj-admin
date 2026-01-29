@@ -4,12 +4,24 @@ import { createClient } from '@/providers/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { ImageGenerationModel } from '@/lib/google-genai';
 
+interface ReferenceImageData {
+  base64: string;
+  mimeType: string;
+}
+
+interface ReferenceImagesData {
+  elements?: ReferenceImageData[];
+  style?: ReferenceImageData[];
+  person?: ReferenceImageData[];
+}
+
 interface GenerateBackgroundParams {
   projectId: string;
   prompt: string;
   model: ImageGenerationModel;
   width: number;
   height: number;
+  referenceImages?: ReferenceImagesData;
 }
 
 interface GenerateBackgroundResult {
@@ -21,7 +33,7 @@ interface GenerateBackgroundResult {
 const generateBackground = async (
   params: GenerateBackgroundParams
 ): Promise<GenerateBackgroundResult> => {
-  const { projectId, prompt, model, width, height } = params;
+  const { projectId, prompt, model, width, height, referenceImages } = params;
 
   // Validate inputs
   if (!projectId) {
@@ -42,7 +54,7 @@ const generateBackground = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ prompt, model, width, height }),
+      body: JSON.stringify({ prompt, model, width, height, referenceImages }),
     });
 
     if (!response.ok) {

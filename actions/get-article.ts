@@ -22,7 +22,7 @@ const getArticle = async (
         author_id,
         category_id,
         image_url,
-        individual_id
+        individual_translation_group_id
       )
     `);
 
@@ -42,7 +42,7 @@ const getArticle = async (
   if (!data) return null;
 
   // Get shared data from translation_groups, fallback to article data for backward compatibility
-  const translationGroup = data.translation_groups as { author_id: string | null; category_id: number | null; image_url: string | null; individual_id: number | null } | null;
+  const translationGroup = data.translation_groups as { author_id: string | null; category_id: number | null; image_url: string | null; individual_translation_group_id: string | null } | null;
 
   return {
     ...data,
@@ -50,7 +50,7 @@ const getArticle = async (
     author_id: translationGroup?.author_id ?? data.author_id,
     category_id: (translationGroup?.category_id ?? data.category_id)?.toString() || null,
     image_url: translationGroup?.image_url ?? data.image_url,
-    individual_id: translationGroup?.individual_id ?? data.individual_id,
+    individual_translation_group_id: translationGroup?.individual_translation_group_id ?? null,
     is_published: data.status.toLowerCase() === 'published',
   };
 };

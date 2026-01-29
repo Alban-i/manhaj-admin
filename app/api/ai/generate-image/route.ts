@@ -1,11 +1,23 @@
 import { NextResponse } from 'next/server';
 import { generateImage, ImageGenerationModel, IMAGE_GENERATION_MODELS } from '@/lib/google-genai';
 
+interface ReferenceImageData {
+  base64: string;
+  mimeType: string;
+}
+
+interface ReferenceImagesData {
+  elements?: ReferenceImageData[];
+  style?: ReferenceImageData[];
+  person?: ReferenceImageData[];
+}
+
 interface GenerateImageRequest {
   prompt: string;
   model: ImageGenerationModel;
   width: number;
   height: number;
+  referenceImages?: ReferenceImagesData;
 }
 
 // Upload base64 image to Cloudinary
@@ -44,7 +56,7 @@ async function uploadToCloudinary(base64: string, mimeType: string): Promise<str
 export async function POST(request: Request) {
   try {
     const body = await request.json() as GenerateImageRequest;
-    const { prompt, model, width, height } = body;
+    const { prompt, model, width, height, referenceImages } = body;
 
     // Validate input
     if (!prompt?.trim()) {
@@ -76,8 +88,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate the image
-    const result = await generateImage(prompt, model, width, height);
+    // Generate the image using the options object signature
+    const result = await generateImage({
+      prompt,
+      model,
+      width,
+      height,
+      referenceImages,
+    });
 
     if (!result.success) {
       return NextResponse.json(

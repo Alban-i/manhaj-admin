@@ -98,14 +98,63 @@ export const FONT_FAMILIES = [
 ];
 
 // AI Image Generation Models
-export type AIGenerationModel = 'regular' | 'pro';
+export type AIGenerationModel = 'nano-banana' | 'nano-banana-pro' | 'gemini-flash' | 'gemini-pro';
 
 export interface AIModelOption {
   value: AIGenerationModel;
   labelKey: string; // Translation key
+  descriptionKey: string; // Translation key for description
+  supportsReferenceImages: boolean;
+  maxReferenceImages: number;
+  estimatedCost: number; // USD per generation
 }
 
 export const AI_MODEL_OPTIONS: AIModelOption[] = [
-  { value: 'regular', labelKey: 'regularModel' },
-  { value: 'pro', labelKey: 'proModel' },
+  {
+    value: 'nano-banana',
+    labelKey: 'nanoBanana',
+    descriptionKey: 'nanoBananaDesc',
+    supportsReferenceImages: false,
+    maxReferenceImages: 0,
+    estimatedCost: 0.02,
+  },
+  {
+    value: 'nano-banana-pro',
+    labelKey: 'nanoBananaPro',
+    descriptionKey: 'nanoBananaProDesc',
+    supportsReferenceImages: false,
+    maxReferenceImages: 0,
+    estimatedCost: 0.04,
+  },
+  {
+    value: 'gemini-flash',
+    labelKey: 'geminiFlashImage',
+    descriptionKey: 'geminiFlashImageDesc',
+    supportsReferenceImages: true,
+    maxReferenceImages: 3,
+    estimatedCost: 0.04,
+  },
+  {
+    value: 'gemini-pro',
+    labelKey: 'geminiProImage',
+    descriptionKey: 'geminiProImageDesc',
+    supportsReferenceImages: true,
+    maxReferenceImages: 14,
+    estimatedCost: 0.15,
+  },
 ];
+
+// Reference image types for Gemini models
+export type ReferenceImageType = 'elements' | 'style' | 'person';
+
+export interface ReferenceImage {
+  id: string;
+  url: string;
+  type: ReferenceImageType;
+}
+
+export interface ReferenceImages {
+  elements: ReferenceImage[];
+  style: ReferenceImage[];
+  person: ReferenceImage[];
+}

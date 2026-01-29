@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from '@/components/ui/toggle-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Card,
   CardContent,
@@ -26,7 +23,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Save, Loader2, Sparkles } from 'lucide-react';
+import { Trash2, Save, Loader2, Sparkles, Plus, X, ImageIcon, Palette, User, DollarSign } from 'lucide-react';
 import {
   ImageProjectWithRelations,
   ImagePresetWithCreator,
@@ -37,6 +34,7 @@ import {
   FONT_FAMILIES,
   AIGenerationModel,
   AI_MODEL_OPTIONS,
+  ReferenceImageType,
 } from '@/types/image-generator';
 import createImageProject from '@/actions/image-generator/projects/create-project';
 import updateImageProject from '@/actions/image-generator/projects/update-project';
@@ -56,6 +54,19 @@ import {
 import { Slider } from '@/components/ui/slider';
 import ImagePreview from './image-preview';
 
+interface ReferenceImageItem {
+  id: string;
+  url: string;
+  base64?: string;
+  mimeType?: string;
+}
+
+interface ReferenceImagesState {
+  elements: ReferenceImageItem[];
+  style: ReferenceImageItem[];
+  person: ReferenceImageItem[];
+}
+
 interface ProjectEditorProps {
   project: ImageProjectWithRelations | null;
   presets: ImagePresetWithCreator[];
@@ -71,7 +82,7 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
 
   // Form state
   const [name, setName] = useState(project?.name ?? '');
-  const [aiModel, setAiModel] = useState<AIGenerationModel>('regular');
+  const [aiModel, setAiModel] = useState<AIGenerationModel>('nano-banana');
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(
     project?.background_image_url ?? null
   );
@@ -83,12 +94,36 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
   const [sizePreset, setSizePreset] = useState<string>('custom');
   const [textContent, setTextContent] = useState(project?.text_content ?? '');
 
+  // Reference images state
+  const [referenceImages, setReferenceImages] = useState<ReferenceImagesState>({
+    elements: [],
+    style: [],
+    person: [],
+  });
+  const [uploadingType, setUploadingType] = useState<ReferenceImageType | null>(null);
+
+  // File input refs
+  const elementsInputRef = useRef<HTMLInputElement>(null);
+  const styleInputRef = useRef<HTMLInputElement>(null);
+  const personInputRef = useRef<HTMLInputElement>(null);
+
   // Text config state
   const existingTextConfig = project?.text_config as unknown as TextConfig | undefined;
   const [textConfig, setTextConfig] = useState<TextConfig>({
     ...DEFAULT_TEXT_CONFIG,
     ...existingTextConfig,
   });
+
+  // Get selected model config
+  const selectedModelConfig = AI_MODEL_OPTIONS.find((m) => m.value === aiModel);
+  const supportsReferenceImages = selectedModelConfig?.supportsReferenceImages ?? false;
+  const maxReferenceImages = selectedModelConfig?.maxReferenceImages ?? 0;
+
+  // Calculate total reference images count
+  const totalReferenceImages =
+    referenceImages.elements.length +
+    referenceImages.style.length +
+    referenceImages.person.length;
 
   // Initialize size preset based on current dimensions
   useEffect(() => {
@@ -101,6 +136,13 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       setSizePreset('custom');
     }
   }, []);
+
+  // Clear reference images when switching to a model that doesn't support them
+  useEffect(() => {
+    if (!supportsReferenceImages) {
+      setReferenceImages({ elements: [], style: [], person: [] });
+    }
+  }, [supportsReferenceImages]);
 
   // Apply preset settings when a preset is selected
   const handlePresetChange = (value: string) => {
@@ -142,6 +184,73 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
     }
   };
 
+  // Handle file upload for reference images
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: ReferenceImageType
+  ) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Check if we've reached the max
+    if (totalReferenceImages >= maxReferenceImages) {
+      toast.error(t('maxImagesReached'));
+      return;
+    }
+
+    setUploadingType(type);
+
+    try {
+      // Read file as base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const result = e.target?.result as string;
+        const base64 = result.split(',')[1]; // Remove data:image/...;base64, prefix
+
+        const newImage: ReferenceImageItem = {
+          id: crypto.randomUUID(),
+          url: result, // For preview
+          base64,
+          mimeType: file.type,
+        };
+
+        setReferenceImages((prev) => ({
+          ...prev,
+          [type]: [...prev[type], newImage],
+        }));
+
+        setUploadingType(null);
+      };
+
+      reader.onerror = () => {
+        toast.error('Failed to read file');
+        setUploadingType(null);
+      };
+
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error('Failed to upload image');
+      setUploadingType(null);
+    }
+
+    // Reset the input
+    event.target.value = '';
+  };
+
+  // Remove a reference image
+  const removeReferenceImage = (type: ReferenceImageType, id: string) => {
+    setReferenceImages((prev) => ({
+      ...prev,
+      [type]: prev[type].filter((img) => img.id !== id),
+    }));
+  };
+
   const handleSave = async () => {
     if (!name.trim()) {
       toast.error(t('nameRequired'));
@@ -178,7 +287,7 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
           toast.error(result.error || t('errorUpdating'));
         }
       }
-    } catch (error) {
+    } catch {
       toast.error(t('somethingWentWrong'));
     } finally {
       setIsSaving(false);
@@ -197,7 +306,7 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       } else {
         toast.error(result.error || t('errorDeleting'));
       }
-    } catch (error) {
+    } catch {
       toast.error(t('somethingWentWrong'));
     } finally {
       setIsDeleting(false);
@@ -211,18 +320,34 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
     }
 
     if (!generationPrompt.trim()) {
-      toast.error(t('promptRequired'));
+      toast.error(t('generationPromptRequired'));
       return;
     }
 
     setIsGenerating(true);
     try {
+      // Prepare reference images data for API
+      const refImagesData = supportsReferenceImages
+        ? {
+            elements: referenceImages.elements
+              .filter((img) => img.base64 && img.mimeType)
+              .map((img) => ({ base64: img.base64!, mimeType: img.mimeType! })),
+            style: referenceImages.style
+              .filter((img) => img.base64 && img.mimeType)
+              .map((img) => ({ base64: img.base64!, mimeType: img.mimeType! })),
+            person: referenceImages.person
+              .filter((img) => img.base64 && img.mimeType)
+              .map((img) => ({ base64: img.base64!, mimeType: img.mimeType! })),
+          }
+        : undefined;
+
       const result = await generateBackground({
         projectId: project.id,
         prompt: generationPrompt,
         model: aiModel,
         width,
         height,
+        referenceImages: refImagesData,
       });
 
       if (result.success && result.imageUrl) {
@@ -231,11 +356,83 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       } else {
         toast.error(result.error || t('errorGenerating'));
       }
-    } catch (error) {
+    } catch {
       toast.error(t('somethingWentWrong'));
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Render reference image upload section
+  const renderReferenceImageSection = (
+    type: ReferenceImageType,
+    icon: React.ReactNode,
+    titleKey: string,
+    descriptionKey: string,
+    inputRef: React.RefObject<HTMLInputElement | null>
+  ) => {
+    const images = referenceImages[type];
+    const canAddMore = totalReferenceImages < maxReferenceImages;
+    const isUploading = uploadingType === type;
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          {icon}
+          <div>
+            <Label className="text-sm font-medium">{t(titleKey)}</Label>
+            <p className="text-xs text-muted-foreground">{t(descriptionKey)}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {/* Existing images */}
+          {images.map((img) => (
+            <div
+              key={img.id}
+              className="relative w-16 h-16 rounded-md overflow-hidden border bg-muted"
+            >
+              <img
+                src={img.url}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => removeReferenceImage(type, img.id)}
+                className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+
+          {/* Add button */}
+          {canAddMore && (
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={isUploading}
+              className="w-16 h-16 rounded-md border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 flex items-center justify-center transition-colors disabled:opacity-50"
+            >
+              {isUploading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              ) : (
+                <Plus className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+          )}
+
+          {/* Hidden file input */}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileUpload(e, type)}
+          />
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -393,39 +590,87 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
 
               <div className="space-y-2">
                 <Label>{t('modelSelection')}</Label>
-                <ToggleGroup
-                  type="single"
-                  value={aiModel}
-                  onValueChange={(value) => {
-                    if (value) setAiModel(value as AIGenerationModel);
-                  }}
-                  className="justify-start"
-                >
+                <div className="grid grid-cols-2 gap-2">
                   {AI_MODEL_OPTIONS.map((option) => (
-                    <ToggleGroupItem
+                    <label
                       key={option.value}
-                      value={option.value}
-                      className="px-4"
+                      className={`flex items-center gap-2 cursor-pointer rounded-md border-2 px-3 py-2 transition-colors ${
+                        aiModel === option.value
+                          ? 'border-primary bg-primary/5'
+                          : 'border-muted hover:border-muted-foreground/30'
+                      }`}
+                      onClick={() => setAiModel(option.value)}
                     >
-                      {t(option.labelKey)}
-                    </ToggleGroupItem>
+                      <Checkbox
+                        checked={aiModel === option.value}
+                        className="pointer-events-none"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{t(option.labelKey)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {t(option.descriptionKey)}
+                        </span>
+                      </div>
+                    </label>
                   ))}
-                </ToggleGroup>
+                </div>
               </div>
 
-              <Button
-                onClick={handleGenerateBackground}
-                disabled={isGenerating || isNew || !generationPrompt.trim()}
-                className="w-full"
-                variant="secondary"
-              >
-                {isGenerating ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Sparkles className="h-4 w-4 mr-2" />
-                )}
-                {isGenerating ? t('generating') : t('generateBackground')}
-              </Button>
+              {/* Reference Images Section - Only shown for Gemini models */}
+              {supportsReferenceImages && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div>
+                    <Label className="text-base">{t('referenceImages')}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t('referenceImagesDescription')} ({totalReferenceImages}/{maxReferenceImages})
+                    </p>
+                  </div>
+
+                  {renderReferenceImageSection(
+                    'elements',
+                    <ImageIcon className="h-4 w-4 text-blue-500" />,
+                    'elementsImages',
+                    'elementsImagesDescription',
+                    elementsInputRef
+                  )}
+
+                  {renderReferenceImageSection(
+                    'style',
+                    <Palette className="h-4 w-4 text-purple-500" />,
+                    'styleImages',
+                    'styleImagesDescription',
+                    styleInputRef
+                  )}
+
+                  {renderReferenceImageSection(
+                    'person',
+                    <User className="h-4 w-4 text-green-500" />,
+                    'personImages',
+                    'personImagesDescription',
+                    personInputRef
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  {t('estimatedCost', { cost: selectedModelConfig?.estimatedCost?.toFixed(2) ?? '0.00' })}
+                </p>
+                <Button
+                  onClick={handleGenerateBackground}
+                  disabled={isGenerating || isNew || !generationPrompt.trim()}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  {isGenerating ? t('generating') : t('generateBackground')}
+                </Button>
+              </div>
 
               {isNew && (
                 <p className="text-sm text-muted-foreground">{t('saveToGenerate')}</p>

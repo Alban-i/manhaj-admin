@@ -13,6 +13,7 @@ import {
 } from '@/types/types';
 import { Json } from '@/types/types_db';
 import { ArticleTranslation } from '@/actions/get-article-translations';
+import { IndividualGroupOption } from '@/actions/get-individual-groups-for-select';
 import { IndividualOption } from '@/actions/get-individuals-for-select';
 
 import {
@@ -87,7 +88,7 @@ const initialData = {
   status: 'draft',
   category_id: null,
   author_id: null,
-  individual_id: null,
+  individual_translation_group_id: null,
   id: undefined,
   published_at: null,
   is_featured: false,
@@ -106,7 +107,7 @@ const formSchema = z.object({
   slug: z.string().min(1),
   category_id: z.string().optional(),
   author_id: z.string().min(1, 'Author is required'),
-  individual_id: z.string().optional(),
+  individual_translation_group_id: z.string().optional(),
   is_featured: z.boolean(),
   is_original: z.boolean(),
   image_url: z.string().optional(),
@@ -125,7 +126,7 @@ interface TagWithLocalizedName {
 }
 
 interface ArticleFormProps {
-  article: (Omit<Articles, 'is_published'> & { id?: string; individual_id?: number | null }) | null;
+  article: (Omit<Articles, 'is_published'> & { id?: string; individual_translation_group_id?: string | null }) | null;
   categories: { id: number; name: string }[];
   tags: TagWithLocalizedName[];
   selectedTagIds: number[];
@@ -133,6 +134,7 @@ interface ArticleFormProps {
   authors: ProfilesWithRoles[];
   languages: Language[];
   translations: ArticleTranslation[];
+  individualGroups: IndividualGroupOption[];
   individuals: IndividualOption[];
 }
 
@@ -145,6 +147,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   authors,
   languages,
   translations,
+  individualGroups,
   individuals,
 }) => {
   const t = useTranslations('articles');
@@ -176,7 +179,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       slug: defaultValues.slug ?? '',
       category_id: defaultValues.category_id?.toString() ?? undefined,
       author_id: defaultValues.author_id?.toString() ?? undefined,
-      individual_id: defaultValues.individual_id?.toString() ?? undefined,
+      individual_translation_group_id: defaultValues.individual_translation_group_id ?? undefined,
       is_featured: defaultValues.is_featured ?? false,
       is_original: defaultValues.is_original ?? true,
       image_url: defaultValues.image_url ?? '',
@@ -229,7 +232,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       const sharedData = {
         author_id: values.author_id || null,
         category_id: values.category_id ? Number(values.category_id) : null,
-        individual_id: values.individual_id ? Number(values.individual_id) : null,
+        individual_translation_group_id: values.individual_translation_group_id || null,
         image_url: values.image_url || null,
         updated_at: new Date().toISOString(),
       };
@@ -388,7 +391,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         slug: data.slug ?? '',
         category_id: values.category_id ?? undefined,
         author_id: values.author_id ?? undefined,
-        individual_id: values.individual_id ?? undefined,
+        individual_translation_group_id: values.individual_translation_group_id ?? undefined,
         is_featured: data.is_featured ?? false,
         is_original: data.is_original ?? true,
         image_url: values.image_url ?? '',
@@ -712,7 +715,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   {/* Individual */}
                   <FormField
                     control={form.control}
-                    name="individual_id"
+                    name="individual_translation_group_id"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>{t('individual')}</FormLabel>
@@ -728,7 +731,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                                 )}
                               >
                                 {field.value
-                                  ? individuals.find((i) => i.id.toString() === field.value)?.name
+                                  ? individualGroups.find((g) => g.id === field.value)?.name
                                   : t('selectIndividual')}
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
@@ -740,24 +743,24 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                               <CommandList>
                                 <CommandEmpty>{t('noIndividualFound')}</CommandEmpty>
                                 <CommandGroup>
-                                  {individuals.map((individual) => (
+                                  {individualGroups.map((group) => (
                                     <CommandItem
-                                      key={individual.id}
-                                      value={individual.name}
+                                      key={group.id}
+                                      value={group.name}
                                       onSelect={() => {
-                                        field.onChange(individual.id.toString());
+                                        field.onChange(group.id);
                                         setIndividualOpen(false);
                                       }}
                                     >
                                       <Check
                                         className={cn(
                                           "mr-2 h-4 w-4",
-                                          field.value === individual.id.toString()
+                                          field.value === group.id
                                             ? "opacity-100"
                                             : "opacity-0"
                                         )}
                                       />
-                                      {individual.name}
+                                      {group.name}
                                     </CommandItem>
                                   ))}
                                 </CommandGroup>
