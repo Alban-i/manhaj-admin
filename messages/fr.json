@@ -139,6 +139,7 @@
     "statusDraft": "Brouillon",
     "statusPublished": "Publié",
     "statusArchived": "Archivé",
+    "statusSystem": "Système",
     "language": "Langue",
     "selectLanguage": "Sélectionner une langue",
     "author": "Auteur",
@@ -376,6 +377,19 @@
     "imageNumber": "Image {number}",
     "maxImagesReached": "Nombre maximum d'images atteint pour ce modèle",
     "uploadingImage": "Téléversement...",
-    "estimatedCost": "Coût estimé : ~{cost} $"
+    "estimatedCost": "Coût estimé : ~{cost} $",
+    "generationHistory": "Historique",
+    "generationSelected": "Génération sélectionnée",
+    "aspectRatio": "Rapport d'aspect",
+    "autoFromDimensions": "Auto (à partir des dimensions)",
+    "personGeneration": "Personnes dans l'image",
+    "dontAllowPeople": "Ne pas autoriser les personnes",
+    "allowAdults": "Autoriser adultes uniquement",
+    "allowAll": "Autoriser tous",
+    "enhancePrompt": "Améliorer le prompt avec l'IA",
+    "enhancePromptDescription": "L'IA enrichira votre prompt avec des détails artistiques pour de meilleurs résultats",
+    "seed": "Graine",
+    "randomSeed": "Laisser vide pour aléatoire",
+    "outputResolution": "Résolution de sortie"
   }
 }

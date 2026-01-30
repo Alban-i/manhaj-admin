@@ -85,6 +85,12 @@ export interface ImageProjectFormData {
   style_reference_url?: string | null;
   text_content: string;
   text_config: TextConfig;
+  // Generation parameters
+  aspect_ratio?: string | null;
+  person_generation?: PersonGeneration;
+  enhance_prompt?: boolean;
+  seed?: number | null;
+  image_size?: ImageSize;
 }
 
 // Available font families for text overlay
@@ -100,6 +106,16 @@ export const FONT_FAMILIES = [
 // AI Image Generation Models
 export type AIGenerationModel = 'nano-banana' | 'nano-banana-pro' | 'gemini-flash' | 'gemini-pro';
 
+// Person generation options for Imagen
+export type PersonGeneration = 'dont_allow' | 'allow_adult' | 'allow_all';
+
+// Image size options for Gemini
+export type ImageSize = '1K' | '2K' | '4K';
+
+// Aspect ratio options per model family
+export const IMAGEN_ASPECT_RATIOS = ['1:1', '3:4', '4:3', '16:9', '9:16'] as const;
+export const GEMINI_ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'] as const;
+
 export interface AIModelOption {
   value: AIGenerationModel;
   labelKey: string; // Translation key
@@ -107,6 +123,12 @@ export interface AIModelOption {
   supportsReferenceImages: boolean;
   maxReferenceImages: number;
   estimatedCost: number; // USD per generation
+  // Capability flags
+  supportsPersonGeneration: boolean;
+  supportsSeed: boolean;
+  supportsEnhancePrompt: boolean;
+  supportsImageSize: boolean;
+  aspectRatioOptions: readonly string[];
 }
 
 export const AI_MODEL_OPTIONS: AIModelOption[] = [
@@ -117,6 +139,11 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
     supportsReferenceImages: false,
     maxReferenceImages: 0,
     estimatedCost: 0.02,
+    supportsPersonGeneration: true,
+    supportsSeed: true,
+    supportsEnhancePrompt: true,
+    supportsImageSize: false,
+    aspectRatioOptions: IMAGEN_ASPECT_RATIOS,
   },
   {
     value: 'nano-banana-pro',
@@ -125,6 +152,11 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
     supportsReferenceImages: false,
     maxReferenceImages: 0,
     estimatedCost: 0.04,
+    supportsPersonGeneration: true,
+    supportsSeed: true,
+    supportsEnhancePrompt: true,
+    supportsImageSize: false,
+    aspectRatioOptions: IMAGEN_ASPECT_RATIOS,
   },
   {
     value: 'gemini-flash',
@@ -133,6 +165,11 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
     supportsReferenceImages: true,
     maxReferenceImages: 3,
     estimatedCost: 0.04,
+    supportsPersonGeneration: false,
+    supportsSeed: false,
+    supportsEnhancePrompt: false,
+    supportsImageSize: true,
+    aspectRatioOptions: GEMINI_ASPECT_RATIOS,
   },
   {
     value: 'gemini-pro',
@@ -141,6 +178,11 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
     supportsReferenceImages: true,
     maxReferenceImages: 14,
     estimatedCost: 0.15,
+    supportsPersonGeneration: false,
+    supportsSeed: false,
+    supportsEnhancePrompt: false,
+    supportsImageSize: true,
+    aspectRatioOptions: GEMINI_ASPECT_RATIOS,
   },
 ];
 

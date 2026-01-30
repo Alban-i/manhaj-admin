@@ -62,7 +62,7 @@ import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon, FileEdit, Archive, Check, ChevronsUpDown } from 'lucide-react';
+import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon, FileEdit, Archive, Settings, Check, ChevronsUpDown } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import arabic from 'react-date-object/calendars/arabic';
@@ -161,7 +161,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const [selectedTranslators, setSelectedTranslators] = useState<number[]>(selectedTranslatorIds);
   const [individualOpen, setIndividualOpen] = useState(false);
   const [translatorOpen, setTranslatorOpen] = useState(false);
-  type FormStatus = 'draft' | 'published' | 'archived';
+  type FormStatus = 'draft' | 'published' | 'system' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
     (defaultValues.status?.toLowerCase() as FormStatus) ?? 'draft'
   );
@@ -1016,6 +1016,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       picklist={[
                         { value: 'draft', label: <span className="flex items-center gap-1.5"><FileEdit className="h-3.5 w-3.5" />{t('statusDraft')}</span> },
                         { value: 'published', label: <span className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{t('statusPublished')}</span> },
+                        { value: 'system', label: <span className="flex items-center gap-1.5"><Settings className="h-3.5 w-3.5" />{t('statusSystem')}</span> },
                         { value: 'archived', label: <span className="flex items-center gap-1.5"><Archive className="h-3.5 w-3.5" />{t('statusArchived')}</span> },
                       ]}
                     />

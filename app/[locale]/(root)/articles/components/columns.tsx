@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArticleStatus } from '@/types/types';
 import { cn } from '@/lib/utils';
 import { getLanguageWithFlag } from '@/i18n/config';
-import { FileEdit, Globe, Archive } from 'lucide-react';
+import { FileEdit, Globe, Archive, Settings } from 'lucide-react';
 
 export type ArticlesInDataTable = {
   id: string;
@@ -78,7 +78,7 @@ export const columns: ExtendedColumnDef<ArticlesInDataTable>[] = [
       const capitalizedStatus =
         status.charAt(0).toUpperCase() + status.slice(1);
 
-      const StatusIcon = status === 'Draft' ? FileEdit : status === 'Published' ? Globe : Archive;
+      const StatusIcon = status === 'Draft' ? FileEdit : status === 'Published' ? Globe : status === 'System' ? Settings : Archive;
 
       return (
         <div className="px-2 text-right">
@@ -90,6 +90,8 @@ export const columns: ExtendedColumnDef<ArticlesInDataTable>[] = [
                 'border-green-400 bg-green-100 text-green-700',
               status === 'Draft' &&
                 'border-gray-800 bg-background text-foreground',
+              status === 'System' &&
+                'border-primary bg-primary/10 text-primary',
               status === 'Archived' && 'border-none'
             )}
           >

@@ -32,6 +32,12 @@ const createImageProject = async (formData: ImageProjectFormData): Promise<Creat
       text_content: formData.text_content,
       text_config: formData.text_config,
       created_by: user.id,
+      // Generation parameters
+      aspect_ratio: formData.aspect_ratio || null,
+      person_generation: formData.person_generation || 'dont_allow',
+      enhance_prompt: formData.enhance_prompt ?? true,
+      seed: formData.seed || null,
+      image_size: formData.image_size || '1K',
     })
     .select('id')
     .single();

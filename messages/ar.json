@@ -139,6 +139,7 @@
     "statusDraft": "مسودة",
     "statusPublished": "منشور",
     "statusArchived": "مؤرشف",
+    "statusSystem": "نظام",
     "language": "اللغة",
     "selectLanguage": "اختر لغة",
     "author": "الكاتب",
@@ -378,6 +379,17 @@
     "uploadingImage": "جارٍ الرفع...",
     "estimatedCost": "التكلفة التقديرية: ~{cost} $",
     "generationHistory": "السجل",
-    "generationSelected": "تم تحديد الصورة"
+    "generationSelected": "تم تحديد الصورة",
+    "aspectRatio": "نسبة العرض إلى الارتفاع",
+    "autoFromDimensions": "تلقائي (من الأبعاد)",
+    "personGeneration": "الأشخاص في الصورة",
+    "dontAllowPeople": "عدم السماح بالأشخاص",
+    "allowAdults": "السماح للبالغين فقط",
+    "allowAll": "السماح للجميع",
+    "enhancePrompt": "تحسين النص بالذكاء الاصطناعي",
+    "enhancePromptDescription": "سيقوم الذكاء الاصطناعي بتوسيع النص بتفاصيل فنية للحصول على نتائج أفضل",
+    "seed": "البذرة",
+    "randomSeed": "اتركه فارغاً للعشوائية",
+    "outputResolution": "دقة الإخراج"
   }
 }

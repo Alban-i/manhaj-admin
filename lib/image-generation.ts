@@ -97,11 +97,23 @@ interface ReferenceImageData {
   description: string;
 }
 
+// Person generation options for Imagen
+type PersonGeneration = 'dont_allow' | 'allow_adult' | 'allow_all';
+
+// Image size options for Gemini
+type ImageSize = '1K' | '2K' | '4K';
+
 interface GenerateImageOptions {
   prompt: string;
   model?: ImageGenerationModel;
-  aspectRatio?: AspectRatio;
+  aspectRatio?: AspectRatio | string;
   referenceImages?: ReferenceImageData[];
+  // Imagen-specific options
+  personGeneration?: PersonGeneration;
+  enhancePrompt?: boolean;
+  seed?: number;
+  // Gemini-specific options
+  imageSize?: ImageSize;
 }
 
 export function getAspectRatio(width: number, height: number): AspectRatio {
@@ -148,6 +160,10 @@ export async function generateImage(
     model: selectedModel = 'nano-banana',
     aspectRatio = '16:9',
     referenceImages,
+    personGeneration,
+    enhancePrompt,
+    seed,
+    imageSize,
   } = options;
 
   try {
@@ -169,6 +185,12 @@ export async function generateImage(
         model: selectedModel,
         aspectRatio,
         referenceImages,
+        // Imagen-specific options
+        personGeneration,
+        enhancePrompt,
+        seed,
+        // Gemini-specific options
+        imageSize,
       }),
     });
 

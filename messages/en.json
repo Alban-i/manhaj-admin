@@ -139,6 +139,7 @@
     "statusDraft": "Draft",
     "statusPublished": "Published",
     "statusArchived": "Archived",
+    "statusSystem": "System",
     "language": "Language",
     "selectLanguage": "Select a language",
     "author": "Author",
@@ -378,6 +379,17 @@
     "uploadingImage": "Uploading...",
     "estimatedCost": "Estimated cost: ~${cost}",
     "generationHistory": "History",
-    "generationSelected": "Generation selected"
+    "generationSelected": "Generation selected",
+    "aspectRatio": "Aspect Ratio",
+    "autoFromDimensions": "Auto (from dimensions)",
+    "personGeneration": "People in Image",
+    "dontAllowPeople": "Don't allow people",
+    "allowAdults": "Allow adults only",
+    "allowAll": "Allow all",
+    "enhancePrompt": "Enhance prompt with AI",
+    "enhancePromptDescription": "AI will expand your prompt with artistic details for better results",
+    "seed": "Seed",
+    "randomSeed": "Leave empty for random",
+    "outputResolution": "Output Resolution"
   }
 }

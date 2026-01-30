@@ -36,6 +36,8 @@ import {
   AIGenerationModel,
   AI_MODEL_OPTIONS,
   ReferenceImageRow,
+  PersonGeneration,
+  ImageSize,
 } from '@/types/image-generator';
 import createImageProject from '@/actions/image-generator/projects/create-project';
 import updateImageProject from '@/actions/image-generator/projects/update-project';
@@ -103,6 +105,17 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
     ...DEFAULT_TEXT_CONFIG,
     ...existingTextConfig,
   });
+
+  // Generation parameters state (persisted to DB)
+  const [aspectRatio, setAspectRatio] = useState<string | null>(project?.aspect_ratio ?? null);
+  const [personGeneration, setPersonGeneration] = useState<PersonGeneration>(
+    (project?.person_generation as PersonGeneration) ?? 'dont_allow'
+  );
+  const [enhancePrompt, setEnhancePrompt] = useState(project?.enhance_prompt ?? true);
+  const [seed, setSeed] = useState<number | null>(project?.seed ?? null);
+  const [imageSize, setImageSize] = useState<ImageSize>(
+    (project?.image_size as ImageSize) ?? '1K'
+  );
 
   // Get selected model config
   const selectedModelConfig = AI_MODEL_OPTIONS.find((m) => m.value === aiModel);
@@ -291,6 +304,12 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       style_reference_url: styleReferenceUrl.trim() || null,
       text_content: textContent,
       text_config: textConfig,
+      // Generation parameters
+      aspect_ratio: aspectRatio,
+      person_generation: personGeneration,
+      enhance_prompt: enhancePrompt,
+      seed,
+      image_size: imageSize,
     };
 
     try {
@@ -383,8 +402,14 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       const result = await generateImage({
         prompt: generationPrompt,
         model: aiModel,
-        aspectRatio: getAspectRatio(width, height),
+        aspectRatio: aspectRatio || getAspectRatio(width, height),
         referenceImages: refImagesData && refImagesData.length > 0 ? refImagesData : undefined,
+        // Imagen-specific options
+        personGeneration,
+        enhancePrompt,
+        seed: seed ?? undefined,
+        // Gemini-specific options
+        imageSize,
       });
 
       if (!result.success) {
@@ -695,6 +720,81 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
                     </label>
                   ))}
                 </div>
+              </div>
+
+              {/* Model-Specific Options Section */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                {/* Aspect Ratio - All models */}
+                <div className="space-y-2">
+                  <Label>{t('aspectRatio')}</Label>
+                  <Select
+                    value={aspectRatio ?? 'auto'}
+                    onValueChange={(v) => setAspectRatio(v === 'auto' ? null : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">{t('autoFromDimensions')}</SelectItem>
+                      {selectedModelConfig?.aspectRatioOptions.map((ratio) => (
+                        <SelectItem key={ratio} value={ratio}>{ratio}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Person Generation - Imagen only */}
+                {selectedModelConfig?.supportsPersonGeneration && (
+                  <div className="space-y-2">
+                    <Label>{t('personGeneration')}</Label>
+                    <Select value={personGeneration} onValueChange={(v) => setPersonGeneration(v as PersonGeneration)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="dont_allow">{t('dontAllowPeople')}</SelectItem>
+                        <SelectItem value="allow_adult">{t('allowAdults')}</SelectItem>
+                        <SelectItem value="allow_all">{t('allowAll')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Image Size - Gemini only */}
+                {selectedModelConfig?.supportsImageSize && (
+                  <div className="space-y-2">
+                    <Label>{t('outputResolution')}</Label>
+                    <Select value={imageSize} onValueChange={(v) => setImageSize(v as ImageSize)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1K">1K</SelectItem>
+                        <SelectItem value="2K">2K</SelectItem>
+                        <SelectItem value="4K">4K</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Enhance Prompt - Imagen only */}
+                {selectedModelConfig?.supportsEnhancePrompt && (
+                  <div className="space-y-1 col-span-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="enhancePrompt"
+                        checked={enhancePrompt}
+                        onCheckedChange={(checked) => setEnhancePrompt(checked === true)}
+                      />
+                      <Label htmlFor="enhancePrompt" className="cursor-pointer">
+                        {t('enhancePrompt')}
+                      </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground pl-6">
+                      {t('enhancePromptDescription')}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Reference Images Section - Only shown for Gemini models */}

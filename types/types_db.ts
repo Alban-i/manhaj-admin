@@ -562,15 +562,20 @@ export type Database = {
       }
       image_projects: {
         Row: {
+          aspect_ratio: string | null
           background_image_url: string | null
           created_at: string | null
           created_by: string | null
+          enhance_prompt: boolean | null
           generation_prompt: string | null
           height: number
           id: string
+          image_size: string | null
           media_id: string | null
           name: string
+          person_generation: string | null
           preset_id: string | null
+          seed: number | null
           style_reference_url: string | null
           text_config: Json
           text_content: string
@@ -578,15 +583,20 @@ export type Database = {
           width: number
         }
         Insert: {
+          aspect_ratio?: string | null
           background_image_url?: string | null
           created_at?: string | null
           created_by?: string | null
+          enhance_prompt?: boolean | null
           generation_prompt?: string | null
           height?: number
           id?: string
+          image_size?: string | null
           media_id?: string | null
           name: string
+          person_generation?: string | null
           preset_id?: string | null
+          seed?: number | null
           style_reference_url?: string | null
           text_config?: Json
           text_content?: string
@@ -594,15 +604,20 @@ export type Database = {
           width?: number
         }
         Update: {
+          aspect_ratio?: string | null
           background_image_url?: string | null
           created_at?: string | null
           created_by?: string | null
+          enhance_prompt?: boolean | null
           generation_prompt?: string | null
           height?: number
           id?: string
+          image_size?: string | null
           media_id?: string | null
           name?: string
+          person_generation?: string | null
           preset_id?: string | null
+          seed?: number | null
           style_reference_url?: string | null
           text_config?: Json
           text_content?: string

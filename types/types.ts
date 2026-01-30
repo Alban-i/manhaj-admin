@@ -7,7 +7,7 @@ export type Language = Database['public']['Tables']['languages']['Row'];
 export type LanguageCode = 'ar' | 'en' | 'fr' | 'de' | 'es';
 export type TextDirection = 'ltr' | 'rtl';
 
-export type ArticleStatus = 'Draft' | 'Published' | 'Archived';
+export type ArticleStatus = 'Draft' | 'Published' | 'System' | 'Archived';
 export type TimelineStatus = 'draft' | 'published' | 'archived';
 
 // Article translation (the actual article content in a specific language)
