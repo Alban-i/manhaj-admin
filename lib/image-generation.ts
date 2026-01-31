@@ -189,7 +189,7 @@ export async function generateImage(
         personGeneration,
         enhancePrompt,
         seed,
-        // Gemini-specific options
+        // Resolution options (Imagen: 1K/2K, Gemini: 1K/2K/4K)
         imageSize,
       }),
     });

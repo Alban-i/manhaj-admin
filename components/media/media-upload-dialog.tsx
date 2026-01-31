@@ -38,6 +38,7 @@ import { useUploadMediaMutation } from '@/actions/media/media-queries';
 import { TablesInsert } from '@/types/types_db';
 import { toast } from 'sonner';
 import { cn, generateSlug } from '@/lib/utils';
+import { optimizeImage, shouldOptimize, formatFileSize as formatOptimizedSize } from '@/lib/optimize-image';
 
 interface MediaUploadDialogProps {
   isOpen: boolean;
@@ -50,14 +51,20 @@ interface MediaUploadDialogProps {
 
 interface FileUploadItem {
   file: File;
+  optimizedFile?: File;
   mediaType: 'audio' | 'image' | 'video' | 'document';
   slug: string;
   altText: string;
   description: string;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: 'pending' | 'optimizing' | 'uploading' | 'success' | 'error';
   progress: number;
   error?: string;
   uploadedMediaData?: TablesInsert<'media'> & { id: string };
+  optimizationInfo?: {
+    originalSize: number;
+    optimizedSize: number;
+    wasOptimized: boolean;
+  };
 }
 
 export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
@@ -171,8 +178,10 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
     value:
       | string
       | number
+      | File
       | FileUploadItem['status']
       | FileUploadItem['uploadedMediaData']
+      | FileUploadItem['optimizationInfo']
       | ((prev: number) => number)
   ) => {
     setFiles((prev) =>
@@ -189,18 +198,41 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
   };
 
   const uploadFile = async (fileItem: FileUploadItem, index: number) => {
+    let fileToUpload = fileItem.file;
+
+    // Check if image should be optimized
+    if (shouldOptimize(fileItem.file)) {
+      updateFileData(index, 'status', 'optimizing');
+      updateFileData(index, 'progress', 0);
+
+      try {
+        const optimizationResult = await optimizeImage(fileItem.file);
+        fileToUpload = optimizationResult.file;
+
+        updateFileData(index, 'optimizedFile', optimizationResult.file);
+        updateFileData(index, 'optimizationInfo', {
+          originalSize: optimizationResult.originalSize,
+          optimizedSize: optimizationResult.optimizedSize,
+          wasOptimized: optimizationResult.wasOptimized,
+        });
+      } catch {
+        // Continue with original file on optimization error
+        console.error('Optimization failed, using original file');
+      }
+    }
+
     updateFileData(index, 'status', 'uploading');
     updateFileData(index, 'progress', 0);
 
     // Check file size before upload (Next.js Server Action limit is 30MB as configured)
     const maxSizeForServerAction = 30 * 1024 * 1024; // 30MB in bytes
-    if (fileItem.file.size > maxSizeForServerAction) {
+    if (fileToUpload.size > maxSizeForServerAction) {
       updateFileData(index, 'status', 'error');
       updateFileData(
         index,
         'error',
         `File size (${formatFileSize(
-          fileItem.file.size
+          fileToUpload.size
         )}) exceeds the 30MB limit for uploads. Please use a smaller file.`
       );
       return;
@@ -210,8 +242,8 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
 
     try {
       const uploadData: MediaUploadData = {
-        originalName: fileItem.file.name,
-        file: fileItem.file,
+        originalName: fileToUpload.name,
+        file: fileToUpload,
         mediaType: fileItem.mediaType,
         altText: fileItem.altText,
         description: fileItem.description,
@@ -251,7 +283,7 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
             index,
             'error',
             `File size (${formatFileSize(
-              fileItem.file.size
+              fileToUpload.size
             )}) exceeds the upload limit. Please use a smaller file.`
           );
         } else if (error.message.includes('Network')) {
@@ -440,7 +472,7 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
                               {fileItem.status === 'error' && (
                                 <AlertCircle className="h-5 w-5 text-destructive" />
                               )}
-                              {fileItem.status === 'uploading' && (
+                              {(fileItem.status === 'uploading' || fileItem.status === 'optimizing') && (
                                 <Loader2 className="h-5 w-5 animate-spin" />
                               )}
                               {fileItem.status === 'pending' && (
@@ -456,11 +488,24 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
                             </div>
                           </div>
 
-                          {fileItem.status === 'uploading' && (
+                          {fileItem.status === 'optimizing' && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Optimizing image...</span>
+                            </div>
+                          )}
+
+                          {(fileItem.status === 'uploading' || fileItem.status === 'success') && (
                             <Progress
                               value={fileItem.progress}
                               className="w-full"
                             />
+                          )}
+
+                          {fileItem.optimizationInfo?.wasOptimized && fileItem.status !== 'optimizing' && (
+                            <p className="text-sm text-green-600">
+                              Optimized: {formatOptimizedSize(fileItem.optimizationInfo.originalSize)} → {formatOptimizedSize(fileItem.optimizationInfo.optimizedSize)}
+                            </p>
                           )}
 
                           {fileItem.status === 'error' && (

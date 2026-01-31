@@ -365,6 +365,7 @@ export type Database = {
         Row: {
           classification_id: number
           created_at: string | null
+          description: string | null
           id: number
           language: string
           name: string
@@ -373,6 +374,7 @@ export type Database = {
         Insert: {
           classification_id: number
           created_at?: string | null
+          description?: string | null
           id?: never
           language: string
           name: string
@@ -381,6 +383,7 @@ export type Database = {
         Update: {
           classification_id?: number
           created_at?: string | null
+          description?: string | null
           id?: never
           language?: string
           name?: string
@@ -405,19 +408,25 @@ export type Database = {
       }
       classifications: {
         Row: {
+          cover_image: string | null
           created_at: string | null
+          display_order: number | null
           id: number
           slug: string
           updated_at: string | null
         }
         Insert: {
+          cover_image?: string | null
           created_at?: string | null
+          display_order?: number | null
           id?: number
           slug: string
           updated_at?: string | null
         }
         Update: {
+          cover_image?: string | null
           created_at?: string | null
+          display_order?: number | null
           id?: number
           slug?: string
           updated_at?: string | null
@@ -562,6 +571,7 @@ export type Database = {
       }
       image_projects: {
         Row: {
+          ai_model: string | null
           aspect_ratio: string | null
           background_image_url: string | null
           created_at: string | null
@@ -575,6 +585,7 @@ export type Database = {
           name: string
           person_generation: string | null
           preset_id: string | null
+          reference_images: Json | null
           seed: number | null
           style_reference_url: string | null
           text_config: Json
@@ -583,6 +594,7 @@ export type Database = {
           width: number
         }
         Insert: {
+          ai_model?: string | null
           aspect_ratio?: string | null
           background_image_url?: string | null
           created_at?: string | null
@@ -596,6 +608,7 @@ export type Database = {
           name: string
           person_generation?: string | null
           preset_id?: string | null
+          reference_images?: Json | null
           seed?: number | null
           style_reference_url?: string | null
           text_config?: Json
@@ -604,6 +617,7 @@ export type Database = {
           width?: number
         }
         Update: {
+          ai_model?: string | null
           aspect_ratio?: string | null
           background_image_url?: string | null
           created_at?: string | null
@@ -617,6 +631,7 @@ export type Database = {
           name?: string
           person_generation?: string | null
           preset_id?: string | null
+          reference_images?: Json | null
           seed?: number | null
           style_reference_url?: string | null
           text_config?: Json
@@ -665,6 +680,7 @@ export type Database = {
           status: string
           type_id: number | null
           updated_at: string | null
+          views: number
         }
         Insert: {
           content?: string | null
@@ -682,6 +698,7 @@ export type Database = {
           status?: string
           type_id?: number | null
           updated_at?: string | null
+          views?: number
         }
         Update: {
           content?: string | null
@@ -699,6 +716,7 @@ export type Database = {
           status?: string
           type_id?: number | null
           updated_at?: string | null
+          views?: number
         }
         Relationships: [
           {
@@ -720,6 +738,32 @@ export type Database = {
             columns: ["type_id"]
             isOneToOne: false
             referencedRelation: "types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      individual_view_tracking: {
+        Row: {
+          individual_id: number
+          ip_address: string
+          viewed_at: string
+        }
+        Insert: {
+          individual_id: number
+          ip_address: string
+          viewed_at?: string
+        }
+        Update: {
+          individual_id?: number
+          ip_address?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "individual_view_tracking_individual_id_fkey"
+            columns: ["individual_id"]
+            isOneToOne: false
+            referencedRelation: "individual_translations"
             referencedColumns: ["id"]
           },
         ]
@@ -1423,6 +1467,10 @@ export type Database = {
       cleanup_old_view_tracking: { Args: never; Returns: undefined }
       increment_article_views: {
         Args: { article_slug: string; viewer_ip: string }
+        Returns: boolean
+      }
+      increment_individual_views: {
+        Args: { individual_slug: string; viewer_ip: string }
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }

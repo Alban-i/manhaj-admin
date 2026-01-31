@@ -21,14 +21,14 @@ const updateImageProject = async (id: string, formData: ImageProjectFormData): P
       height: formData.height,
       generation_prompt: formData.generation_prompt || null,
       style_reference_url: formData.style_reference_url || null,
-      text_content: formData.text_content,
-      text_config: formData.text_config,
       // Generation parameters
       aspect_ratio: formData.aspect_ratio || null,
       person_generation: formData.person_generation || 'dont_allow',
       enhance_prompt: formData.enhance_prompt ?? true,
       seed: formData.seed || null,
       image_size: formData.image_size || '1K',
+      ai_model: formData.ai_model,
+      reference_images: formData.reference_images,
     })
     .eq('id', id);
 

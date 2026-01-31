@@ -59,6 +59,7 @@ const IndividualPage = async ({
       created_at: null,
       updated_at: null,
       external_links: [],
+      views: 0,
     } : null;
 
     return (

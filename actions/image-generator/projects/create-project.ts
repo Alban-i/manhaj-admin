@@ -29,8 +29,6 @@ const createImageProject = async (formData: ImageProjectFormData): Promise<Creat
       height: formData.height,
       generation_prompt: formData.generation_prompt || null,
       style_reference_url: formData.style_reference_url || null,
-      text_content: formData.text_content,
-      text_config: formData.text_config,
       created_by: user.id,
       // Generation parameters
       aspect_ratio: formData.aspect_ratio || null,
@@ -38,6 +36,8 @@ const createImageProject = async (formData: ImageProjectFormData): Promise<Creat
       enhance_prompt: formData.enhance_prompt ?? true,
       seed: formData.seed || null,
       image_size: formData.image_size || '1K',
+      ai_model: formData.ai_model ?? 'nano-banana',
+      reference_images: formData.reference_images ?? [],
     })
     .select('id')
     .single();

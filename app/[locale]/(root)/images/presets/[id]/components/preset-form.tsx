@@ -26,10 +26,7 @@ import { Trash2, Save, Loader2 } from 'lucide-react';
 import {
   ImagePresetWithCreator,
   ImagePresetFormData,
-  TextConfig,
-  DEFAULT_TEXT_CONFIG,
   SIZE_PRESETS,
-  FONT_FAMILIES,
 } from '@/types/image-generator';
 import createImagePreset from '@/actions/image-generator/presets/create-preset';
 import updateImagePreset from '@/actions/image-generator/presets/update-preset';
@@ -45,8 +42,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Slider } from '@/components/ui/slider';
-
 interface PresetFormProps {
   preset: ImagePresetWithCreator | null;
   isNew: boolean;
@@ -65,13 +60,6 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, isNew }) => {
   const [width, setWidth] = useState(preset?.width ?? 1200);
   const [height, setHeight] = useState(preset?.height ?? 630);
   const [sizePreset, setSizePreset] = useState<string>('custom');
-
-  // Text config state
-  const existingTextConfig = preset?.text_config as TextConfig | undefined;
-  const [textConfig, setTextConfig] = useState<TextConfig>({
-    ...DEFAULT_TEXT_CONFIG,
-    ...existingTextConfig,
-  });
 
   // Initialize size preset based on current dimensions
   useState(() => {
@@ -112,7 +100,6 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, isNew }) => {
       style_reference_url: styleReferenceUrl.trim() || null,
       width,
       height,
-      text_config: textConfig,
     };
 
     try {
@@ -204,233 +191,94 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, isNew }) => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left Column - Basic Info */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('basicInfo')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">{t('name')}</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t('presetNamePlaceholder')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="promptTemplate">{t('promptTemplate')}</Label>
-                <Textarea
-                  id="promptTemplate"
-                  value={promptTemplate}
-                  onChange={(e) => setPromptTemplate(e.target.value)}
-                  placeholder={t('promptTemplatePlaceholder')}
-                  rows={4}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t('promptTemplateHint')}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="styleReferenceUrl">{t('styleReferenceUrl')}</Label>
-                <Input
-                  id="styleReferenceUrl"
-                  value={styleReferenceUrl}
-                  onChange={(e) => setStyleReferenceUrl(e.target.value)}
-                  placeholder="https://..."
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('dimensions')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>{t('sizePreset')}</Label>
-                <Select value={sizePreset} onValueChange={handleSizePresetChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SIZE_PRESETS.map((preset) => (
-                      <SelectItem key={preset.name} value={preset.name}>
-                        {preset.name} ({preset.width}x{preset.height})
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">{t('custom')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="width">{t('width')}</Label>
-                  <Input
-                    id="width"
-                    type="number"
-                    value={width}
-                    onChange={(e) => {
-                      setWidth(Number(e.target.value));
-                      setSizePreset('custom');
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="height">{t('height')}</Label>
-                  <Input
-                    id="height"
-                    type="number"
-                    value={height}
-                    onChange={(e) => {
-                      setHeight(Number(e.target.value));
-                      setSizePreset('custom');
-                    }}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Text Configuration */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('textConfiguration')}</CardTitle>
-            <CardDescription>{t('textConfigDescription')}</CardDescription>
+            <CardTitle>{t('basicInfo')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>{t('fontFamily')}</Label>
-              <Select
-                value={textConfig.fontFamily}
-                onValueChange={(value) =>
-                  setTextConfig({ ...textConfig, fontFamily: value })
-                }
-              >
+              <Label htmlFor="name">{t('name')}</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('presetNamePlaceholder')}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="promptTemplate">{t('promptTemplate')}</Label>
+              <Textarea
+                id="promptTemplate"
+                value={promptTemplate}
+                onChange={(e) => setPromptTemplate(e.target.value)}
+                placeholder={t('promptTemplatePlaceholder')}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('promptTemplateHint')}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="styleReferenceUrl">{t('styleReferenceUrl')}</Label>
+              <Input
+                id="styleReferenceUrl"
+                value={styleReferenceUrl}
+                onChange={(e) => setStyleReferenceUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('dimensions')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('sizePreset')}</Label>
+              <Select value={sizePreset} onValueChange={handleSizePresetChange}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {FONT_FAMILIES.map((font) => (
-                    <SelectItem key={font.value} value={font.value}>
-                      {font.label}
+                  {SIZE_PRESETS.map((preset) => (
+                    <SelectItem key={preset.name} value={preset.name}>
+                      {preset.name} ({preset.width}x{preset.height})
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">{t('custom')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>{t('fontSize')}: {textConfig.fontSize}px</Label>
-              <Slider
-                value={[textConfig.fontSize]}
-                onValueChange={([value]) =>
-                  setTextConfig({ ...textConfig, fontSize: value })
-                }
-                min={12}
-                max={120}
-                step={1}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('textColor')}</Label>
-              <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="width">{t('width')}</Label>
                 <Input
-                  type="color"
-                  value={textConfig.color}
-                  onChange={(e) =>
-                    setTextConfig({ ...textConfig, color: e.target.value })
-                  }
-                  className="w-12 h-10 p-1 cursor-pointer"
-                />
-                <Input
-                  value={textConfig.color}
-                  onChange={(e) =>
-                    setTextConfig({ ...textConfig, color: e.target.value })
-                  }
-                  className="flex-1"
+                  id="width"
+                  type="number"
+                  value={width}
+                  onChange={(e) => {
+                    setWidth(Number(e.target.value));
+                    setSizePreset('custom');
+                  }}
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('position')}</Label>
-              <Select
-                value={textConfig.position}
-                onValueChange={(value) =>
-                  setTextConfig({ ...textConfig, position: value as TextConfig['position'] })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="top">{t('positionTop')}</SelectItem>
-                  <SelectItem value="center">{t('positionCenter')}</SelectItem>
-                  <SelectItem value="bottom">{t('positionBottom')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('alignment')}</Label>
-              <Select
-                value={textConfig.alignment}
-                onValueChange={(value) =>
-                  setTextConfig({ ...textConfig, alignment: value as TextConfig['alignment'] })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="left">{t('alignLeft')}</SelectItem>
-                  <SelectItem value="center">{t('alignCenter')}</SelectItem>
-                  <SelectItem value="right">{t('alignRight')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('backgroundColor')}</Label>
-              <div className="flex gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="height">{t('height')}</Label>
                 <Input
-                  type="color"
-                  value={textConfig.bgColor}
-                  onChange={(e) =>
-                    setTextConfig({ ...textConfig, bgColor: e.target.value })
-                  }
-                  className="w-12 h-10 p-1 cursor-pointer"
-                />
-                <Input
-                  value={textConfig.bgColor}
-                  onChange={(e) =>
-                    setTextConfig({ ...textConfig, bgColor: e.target.value })
-                  }
-                  className="flex-1"
+                  id="height"
+                  type="number"
+                  value={height}
+                  onChange={(e) => {
+                    setHeight(Number(e.target.value));
+                    setSizePreset('custom');
+                  }}
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('backgroundOpacity')}: {Math.round(textConfig.bgOpacity * 100)}%</Label>
-              <Slider
-                value={[textConfig.bgOpacity * 100]}
-                onValueChange={([value]) =>
-                  setTextConfig({ ...textConfig, bgOpacity: value / 100 })
-                }
-                min={0}
-                max={100}
-                step={5}
-              />
             </div>
           </CardContent>
         </Card>

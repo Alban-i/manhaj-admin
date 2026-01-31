@@ -12,6 +12,7 @@ export interface ProjectGeneration {
     id: string;
     url: string;
     file_name: string;
+    slug: string;
   } | null;
 }
 
@@ -25,6 +26,7 @@ interface RawGeneration {
     id: string;
     url: string;
     file_name: string;
+    slug: string;
   } | null;
 }
 
@@ -45,7 +47,8 @@ const getProjectGenerations = async (projectId: string): Promise<{
       media:media_id (
         id,
         url,
-        file_name
+        file_name,
+        slug
       )
     `)
     .eq('project_id', projectId)

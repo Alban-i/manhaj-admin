@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,21 +24,19 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Save, Loader2, Sparkles, Plus, X, DollarSign, ImagePlus, History } from 'lucide-react';
+import { Trash2, Save, Loader2, Sparkles, Plus, X, DollarSign, ImagePlus, History, Download, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   ImageProjectWithRelations,
   ImagePresetWithCreator,
   ImageProjectFormData,
-  TextConfig,
-  DEFAULT_TEXT_CONFIG,
   SIZE_PRESETS,
-  FONT_FAMILIES,
   AIGenerationModel,
   AI_MODEL_OPTIONS,
   ReferenceImageRow,
   PersonGeneration,
   ImageSize,
+  REFERENCE_IMAGE_SNIPPETS,
 } from '@/types/image-generator';
 import createImageProject from '@/actions/image-generator/projects/create-project';
 import updateImageProject from '@/actions/image-generator/projects/update-project';
@@ -58,14 +57,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Slider } from '@/components/ui/slider';
 import ImagePreview from './image-preview';
+import ImageOptimizationModal, { SaveOptions } from '@/components/image-optimization-modal';
+import { optimizeBase64Image, getImageDimensions } from '@/lib/optimize-image';
 
 interface ProjectEditorProps {
   project: ImageProjectWithRelations | null;
   presets: ImagePresetWithCreator[];
   isNew: boolean;
 }
+
+/**
+ * Generate a slug from a prompt by taking the first few words
+ */
+const generateSlugFromPrompt = (prompt: string): string => {
+  return prompt
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+    .trim()
+    .split(/\s+/)                  // Split by whitespace
+    .slice(0, 4)                   // Take first 4 words
+    .join('-');                    // Join with hyphens
+};
 
 const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }) => {
   const t = useTranslations('imageGenerator');
@@ -76,45 +89,65 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
 
   // Form state
   const [name, setName] = useState(project?.name ?? '');
-  const [aiModel, setAiModel] = useState<AIGenerationModel>('nano-banana');
+  const [aiModel, setAiModel] = useState<AIGenerationModel>(
+    (project?.ai_model as AIGenerationModel) ?? 'nano-banana'
+  );
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(
     project?.background_image_url ?? null
   );
   const [presetId, setPresetId] = useState<string | null>(project?.preset_id ?? null);
-  const [generationPrompt, setGenerationPrompt] = useState(project?.generation_prompt ?? '');
+  const DEFAULT_GENERATION_PROMPT = `[Your subject description].
+
+Composition: Center the main subject in the middle of the frame.
+Leave generous empty space (at least 20%) on all sides around the subject.
+The image must work when cropped to different aspect ratios (16:9, 4:3, 2:1).
+Avoid placing important elements near the edges.`;
+
+  const [generationPrompt, setGenerationPrompt] = useState(
+    project?.generation_prompt ?? (isNew ? DEFAULT_GENERATION_PROMPT : '')
+  );
   const [styleReferenceUrl, setStyleReferenceUrl] = useState(project?.style_reference_url ?? '');
-  const [width, setWidth] = useState(project?.width ?? 1200);
-  const [height, setHeight] = useState(project?.height ?? 630);
+  const [width, setWidth] = useState(project?.width ?? 1600);
+  const [height, setHeight] = useState(project?.height ?? 900);
   const [sizePreset, setSizePreset] = useState<string>('custom');
-  const [textContent, setTextContent] = useState(project?.text_content ?? '');
 
   // Reference images state - flexible rows with descriptions
-  const [referenceImages, setReferenceImages] = useState<ReferenceImageRow[]>([]);
+  const [referenceImages, setReferenceImages] = useState<ReferenceImageRow[]>(
+    (project?.reference_images as unknown as ReferenceImageRow[]) ?? []
+  );
   const [uploadingRowId, setUploadingRowId] = useState<string | null>(null);
 
   // Generation history state
   const [generations, setGenerations] = useState<ProjectGeneration[]>([]);
   const [isSelectingGeneration, setIsSelectingGeneration] = useState<string | null>(null);
 
+  // Pending image state (for unsaved AI-generated images)
+  interface PendingImage {
+    base64: string;
+    mimeType: string;
+    prompt: string;
+    model: string;
+    dimensions: { width: number; height: number };
+  }
+  const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
+  const [showOptimizationModal, setShowOptimizationModal] = useState(false);
+  const [isSavingToMedia, setIsSavingToMedia] = useState(false);
+  const [savedMediaSlug, setSavedMediaSlug] = useState<string | null>(null);
+
   // File input refs - stored by row id
   const fileInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
-  // Text config state
-  const existingTextConfig = project?.text_config as unknown as TextConfig | undefined;
-  const [textConfig, setTextConfig] = useState<TextConfig>({
-    ...DEFAULT_TEXT_CONFIG,
-    ...existingTextConfig,
-  });
-
   // Generation parameters state (persisted to DB)
-  const [aspectRatio, setAspectRatio] = useState<string | null>(project?.aspect_ratio ?? null);
+  const [aspectRatio, setAspectRatio] = useState<string | null>(
+    project?.aspect_ratio ?? (isNew ? '16:9' : null)
+  );
   const [personGeneration, setPersonGeneration] = useState<PersonGeneration>(
     (project?.person_generation as PersonGeneration) ?? 'dont_allow'
   );
   const [enhancePrompt, setEnhancePrompt] = useState(project?.enhance_prompt ?? true);
   const [seed, setSeed] = useState<number | null>(project?.seed ?? null);
   const [imageSize, setImageSize] = useState<ImageSize>(
-    (project?.image_size as ImageSize) ?? '1K'
+    (project?.image_size as ImageSize) ?? '2K'
   );
 
   // Get selected model config
@@ -144,6 +177,18 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
     }
   }, [supportsReferenceImages]);
 
+  // Reset imageSize when switching to a model that doesn't support the current size
+  useEffect(() => {
+    const availableSizes = selectedModelConfig?.imageSizeOptions ?? [];
+    if (availableSizes.length > 0 && !availableSizes.includes(imageSize)) {
+      // Default to the highest available size, or '2K' if available, otherwise first option
+      const newSize = availableSizes.includes('2K')
+        ? '2K'
+        : availableSizes[availableSizes.length - 1];
+      setImageSize(newSize);
+    }
+  }, [aiModel, selectedModelConfig?.imageSizeOptions]);
+
   // Load generation history on mount
   useEffect(() => {
     if (project?.id) {
@@ -156,6 +201,14 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
     const { data } = await getProjectGenerations(project.id);
     setGenerations(data || []);
   };
+
+  // Initialize savedMediaSlug from the selected generation when generations load
+  useEffect(() => {
+    const selectedGeneration = generations.find(g => g.is_selected);
+    if (selectedGeneration?.media?.slug) {
+      setSavedMediaSlug(selectedGeneration.media.slug);
+    }
+  }, [generations]);
 
   // Apply preset settings when a preset is selected
   const handlePresetChange = (value: string) => {
@@ -171,12 +224,6 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       setHeight(selectedPreset.height);
       setGenerationPrompt(selectedPreset.prompt_template);
       setStyleReferenceUrl(selectedPreset.style_reference_url ?? '');
-
-      // Apply text config from preset
-      const presetTextConfig = selectedPreset.text_config as unknown as TextConfig | undefined;
-      if (presetTextConfig) {
-        setTextConfig({ ...DEFAULT_TEXT_CONFIG, ...presetTextConfig });
-      }
 
       // Update size preset dropdown
       const matchingSize = SIZE_PRESETS.find(
@@ -302,14 +349,14 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       height,
       generation_prompt: generationPrompt.trim() || null,
       style_reference_url: styleReferenceUrl.trim() || null,
-      text_content: textContent,
-      text_config: textConfig,
       // Generation parameters
       aspect_ratio: aspectRatio,
       person_generation: personGeneration,
       enhance_prompt: enhancePrompt,
       seed,
       image_size: imageSize,
+      ai_model: aiModel,
+      reference_images: referenceImages,
     };
 
     try {
@@ -363,6 +410,13 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       const result = await selectGeneration(project.id, generationId);
       if (result.success && result.imageUrl) {
         setBackgroundImageUrl(result.imageUrl);
+
+        // Update savedMediaSlug from the selected generation
+        const selectedGen = generations.find(g => g.id === generationId);
+        if (selectedGen?.media?.slug) {
+          setSavedMediaSlug(selectedGen.media.slug);
+        }
+
         await loadGenerations();
       } else {
         toast.error(result.error || t('somethingWentWrong'));
@@ -385,6 +439,12 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
       return;
     }
 
+    // Warn if there's an unsaved image
+    if (pendingImage) {
+      const confirmed = window.confirm(t('unsavedImageWarning'));
+      if (!confirmed) return;
+    }
+
     setIsGenerating(true);
     try {
       // Prepare reference images data for API (only rows with images)
@@ -398,7 +458,7 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
             }))
         : undefined;
 
-      // Step 1: Call Edge Function directly from browser (bypasses Vercel limits)
+      // Call Edge Function directly from browser (bypasses Vercel limits)
       const result = await generateImage({
         prompt: generationPrompt,
         model: aiModel,
@@ -417,7 +477,61 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
         return;
       }
 
-      // Step 2: Get user session for authenticated upload
+      // Get image dimensions for optimization modal
+      const dataUrl = `data:${result.mimeType};base64,${result.base64}`;
+      const dimensions = await getImageDimensions(dataUrl);
+
+      // Store result in state instead of auto-saving
+      setPendingImage({
+        base64: result.base64,
+        mimeType: result.mimeType,
+        prompt: generationPrompt,
+        model: aiModel,
+        dimensions,
+      });
+
+      // Clear savedMediaSlug since we now have a new pending image
+      setSavedMediaSlug(null);
+
+      // Update preview with base64 data URL
+      setBackgroundImageUrl(dataUrl);
+      toast.success(t('imageGenerated'));
+    } catch (error) {
+      console.error('Error generating background:', error);
+      toast.error(error instanceof Error ? error.message : t('somethingWentWrong'));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSaveToMedia = async (options: SaveOptions) => {
+    if (!pendingImage || !project) return;
+
+    setIsSavingToMedia(true);
+
+    try {
+      // Optimize the image based on selected options
+      let imageBase64 = pendingImage.base64;
+      let imageMimeType = pendingImage.mimeType;
+      let imageSize = 0;
+
+      // Only optimize if not maximum quality with original format
+      if (options.quality !== 'maximum' || options.format !== 'png') {
+        const optimized = await optimizeBase64Image(
+          pendingImage.base64,
+          pendingImage.mimeType,
+          options
+        );
+        imageBase64 = optimized.base64;
+        imageMimeType = optimized.mimeType;
+        imageSize = optimized.size;
+      } else {
+        // Calculate original size for non-optimized image
+        const blob = await fetch(`data:${pendingImage.mimeType};base64,${pendingImage.base64}`).then(r => r.blob());
+        imageSize = blob.size;
+      }
+
+      // Get user session for authenticated upload
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -426,38 +540,54 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
         return;
       }
 
-      // Step 3: Upload to Supabase Storage with session token
-      const { url, filePath, fileName, fileSize } = await uploadToSupabaseStorage(
-        result.base64,
-        result.mimeType,
+      // Upload to Supabase Storage with session token
+      const uploadResult = await uploadToSupabaseStorage(
+        imageBase64,
+        imageMimeType,
         session.access_token
       );
 
-      // Step 4: Save to database (creates media record + links to project)
+      // Save to database (creates media record + links to project)
       const saveResult = await saveGeneratedImage({
         projectId: project.id,
-        imageUrl: url,
-        filePath,
-        fileName,
-        fileSize,
-        mimeType: result.mimeType,
-        prompt: generationPrompt,
-        model: aiModel,
+        imageUrl: uploadResult.url,
+        filePath: uploadResult.filePath,
+        fileName: uploadResult.fileName,
+        fileSize: imageSize || uploadResult.fileSize,
+        mimeType: imageMimeType,
+        prompt: pendingImage.prompt,
+        model: pendingImage.model,
+        // Pass metadata from modal
+        altText: options.metadata.altText || undefined,
+        slug: options.metadata.slug || undefined,
+        description: options.metadata.description || undefined,
       });
 
       if (!saveResult.success) {
-        toast.error(saveResult.error || t('errorGenerating'));
+        toast.error(saveResult.error || t('errorSaving'));
         return;
       }
 
-      setBackgroundImageUrl(url);
+      // Update background to the permanent URL
+      setBackgroundImageUrl(uploadResult.url);
+
+      // Store the saved media slug for "View in Media" button
+      if (saveResult.mediaSlug) {
+        setSavedMediaSlug(saveResult.mediaSlug);
+      }
+
+      // Clear pending state
+      setPendingImage(null);
+      setShowOptimizationModal(false);
+
+      // Refresh generations
       await loadGenerations();
-      toast.success(t('backgroundGenerated'));
+      toast.success(t('imageSavedToMedia'));
     } catch (error) {
-      console.error('Error generating background:', error);
+      console.error('Error saving to media:', error);
       toast.error(error instanceof Error ? error.message : t('somethingWentWrong'));
     } finally {
-      setIsGenerating(false);
+      setIsSavingToMedia(false);
     }
   };
 
@@ -515,6 +645,19 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
 
         {/* Description textarea */}
         <div className="flex-1 space-y-1">
+          {/* Snippet buttons */}
+          <div className="flex flex-wrap gap-1 mb-1">
+            {REFERENCE_IMAGE_SNIPPETS.map((snippet) => (
+              <button
+                key={snippet.id}
+                type="button"
+                onClick={() => updateRowDescription(row.id, row.description + snippet.text)}
+                className="text-xs px-2 py-0.5 rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground transition-colors"
+              >
+                {t(snippet.labelKey)}
+              </button>
+            ))}
+          </div>
           <Textarea
             value={row.description}
             onChange={(e) => updateRowDescription(row.id, e.target.value)}
@@ -761,7 +904,7 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
                 )}
 
                 {/* Image Size - Gemini only */}
-                {selectedModelConfig?.supportsImageSize && (
+                {selectedModelConfig?.supportsImageSize && selectedModelConfig.imageSizeOptions.length > 0 && (
                   <div className="space-y-2">
                     <Label>{t('outputResolution')}</Label>
                     <Select value={imageSize} onValueChange={(v) => setImageSize(v as ImageSize)}>
@@ -769,9 +912,9 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1K">1K</SelectItem>
-                        <SelectItem value="2K">2K</SelectItem>
-                        <SelectItem value="4K">4K</SelectItem>
+                        {selectedModelConfig.imageSizeOptions.map((size) => (
+                          <SelectItem key={size} value={size}>{size}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -909,175 +1052,73 @@ const ProjectEditor: React.FC<ProjectEditorProps> = ({ project, presets, isNew }
 
         {/* Row 3: Preview - Full Width */}
         <Card>
-          <CardHeader>
-            <CardTitle>{t('preview')}</CardTitle>
-            <CardDescription>
-              {width}x{height}px
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>{t('preview')}</CardTitle>
+              <CardDescription>
+                {width}x{height}px
+                {pendingImage && (
+                  <span className="ml-2 text-amber-600">({t('unsaved')})</span>
+                )}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              {pendingImage && (
+                <Button
+                  onClick={() => setShowOptimizationModal(true)}
+                  disabled={isSavingToMedia}
+                  size="sm"
+                >
+                  {isSavingToMedia ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  {t('saveToMedia')}
+                </Button>
+              )}
+              {savedMediaSlug && !pendingImage && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/media/images/${savedMediaSlug}`}>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    {t('viewInMedia')}
+                  </Link>
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <ImagePreview
               width={width}
               height={height}
-              textContent={textContent}
-              textConfig={textConfig}
               backgroundImageUrl={backgroundImageUrl}
             />
-          </CardContent>
-        </Card>
-
-        {/* Row 4: Text Overlay - Full Width */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('textOverlay')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="textContent">{t('textContent')}</Label>
-              <Textarea
-                id="textContent"
-                value={textContent}
-                onChange={(e) => setTextContent(e.target.value)}
-                placeholder={t('textContentPlaceholder')}
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label>{t('fontFamily')}</Label>
-                <Select
-                  value={textConfig.fontFamily}
-                  onValueChange={(value) =>
-                    setTextConfig({ ...textConfig, fontFamily: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FONT_FAMILIES.map((font) => (
-                      <SelectItem key={font.value} value={font.value}>
-                        {font.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('position')}</Label>
-                <Select
-                  value={textConfig.position}
-                  onValueChange={(value) =>
-                    setTextConfig({ ...textConfig, position: value as TextConfig['position'] })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="top">{t('positionTop')}</SelectItem>
-                    <SelectItem value="center">{t('positionCenter')}</SelectItem>
-                    <SelectItem value="bottom">{t('positionBottom')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('alignment')}</Label>
-                <Select
-                  value={textConfig.alignment}
-                  onValueChange={(value) =>
-                    setTextConfig({ ...textConfig, alignment: value as TextConfig['alignment'] })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="left">{t('alignLeft')}</SelectItem>
-                    <SelectItem value="center">{t('alignCenter')}</SelectItem>
-                    <SelectItem value="right">{t('alignRight')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('fontSize')}: {textConfig.fontSize}px</Label>
-                <Slider
-                  value={[textConfig.fontSize]}
-                  onValueChange={([value]) =>
-                    setTextConfig({ ...textConfig, fontSize: value })
-                  }
-                  min={12}
-                  max={120}
-                  step={1}
-                  className="mt-3"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>{t('textColor')}</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={textConfig.color}
-                    onChange={(e) =>
-                      setTextConfig({ ...textConfig, color: e.target.value })
-                    }
-                    className="w-12 h-10 p-1 cursor-pointer"
-                  />
-                  <Input
-                    value={textConfig.color}
-                    onChange={(e) =>
-                      setTextConfig({ ...textConfig, color: e.target.value })
-                    }
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('backgroundColor')}</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={textConfig.bgColor}
-                    onChange={(e) =>
-                      setTextConfig({ ...textConfig, bgColor: e.target.value })
-                    }
-                    className="w-12 h-10 p-1 cursor-pointer"
-                  />
-                  <Input
-                    value={textConfig.bgColor}
-                    onChange={(e) =>
-                      setTextConfig({ ...textConfig, bgColor: e.target.value })
-                    }
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('backgroundOpacity')}: {Math.round(textConfig.bgOpacity * 100)}%</Label>
-                <Slider
-                  value={[textConfig.bgOpacity * 100]}
-                  onValueChange={([value]) =>
-                    setTextConfig({ ...textConfig, bgOpacity: value / 100 })
-                  }
-                  min={0}
-                  max={100}
-                  step={5}
-                  className="mt-3"
-                />
-              </div>
-            </div>
+            {pendingImage && (
+              <p className="text-sm text-amber-600 mt-3">
+                {t('unsavedImageNote')}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Optimization Modal */}
+      {pendingImage && (
+        <ImageOptimizationModal
+          isOpen={showOptimizationModal}
+          onClose={() => setShowOptimizationModal(false)}
+          onSave={handleSaveToMedia}
+          isSaving={isSavingToMedia}
+          originalSize={
+            // Calculate size from base64
+            Math.ceil(pendingImage.base64.length * 0.75)
+          }
+          originalDimensions={pendingImage.dimensions}
+          defaultAltText={pendingImage.prompt.substring(0, 200)}
+          defaultDescription={`AI generated with ${pendingImage.model}`}
+          defaultSlug={generateSlugFromPrompt(pendingImage.prompt)}
+        />
+      )}
     </div>
   );
 };

@@ -9,32 +9,6 @@ export type ImageProject = Database['public']['Tables']['image_projects']['Row']
 export type ImageProjectInsert = Database['public']['Tables']['image_projects']['Insert'];
 export type ImageProjectUpdate = Database['public']['Tables']['image_projects']['Update'];
 
-// Text position options
-export type TextPosition = 'top' | 'center' | 'bottom';
-export type TextAlignment = 'left' | 'center' | 'right';
-
-// Text configuration interface (stored as JSONB)
-export interface TextConfig {
-  fontFamily: string;
-  fontSize: number;
-  color: string;
-  position: TextPosition;
-  alignment: TextAlignment;
-  bgColor: string;
-  bgOpacity: number;
-}
-
-// Default text configuration
-export const DEFAULT_TEXT_CONFIG: TextConfig = {
-  fontFamily: 'Inter',
-  fontSize: 48,
-  color: '#ffffff',
-  position: 'center',
-  alignment: 'center',
-  bgColor: '#000000',
-  bgOpacity: 0.5,
-};
-
 // Common size presets
 export interface SizePreset {
   name: string;
@@ -43,6 +17,7 @@ export interface SizePreset {
 }
 
 export const SIZE_PRESETS: SizePreset[] = [
+  { name: 'HD 16:9', width: 1600, height: 900 },
   { name: 'OG Image', width: 1200, height: 630 },
   { name: 'Twitter Card', width: 1200, height: 600 },
   { name: 'Instagram Post', width: 1080, height: 1080 },
@@ -73,7 +48,6 @@ export interface ImagePresetFormData {
   style_reference_url?: string | null;
   width: number;
   height: number;
-  text_config: TextConfig;
 }
 
 export interface ImageProjectFormData {
@@ -83,25 +57,15 @@ export interface ImageProjectFormData {
   height: number;
   generation_prompt?: string | null;
   style_reference_url?: string | null;
-  text_content: string;
-  text_config: TextConfig;
   // Generation parameters
   aspect_ratio?: string | null;
   person_generation?: PersonGeneration;
   enhance_prompt?: boolean;
   seed?: number | null;
   image_size?: ImageSize;
+  ai_model?: AIGenerationModel;
+  reference_images?: ReferenceImageRow[];
 }
-
-// Available font families for text overlay
-export const FONT_FAMILIES = [
-  { value: 'Inter', label: 'Inter' },
-  { value: 'Amiri', label: 'Amiri (Arabic)' },
-  { value: 'Scheherazade New', label: 'Scheherazade New (Arabic)' },
-  { value: 'Noto Sans Arabic', label: 'Noto Sans Arabic' },
-  { value: 'Georgia', label: 'Georgia' },
-  { value: 'Arial', label: 'Arial' },
-];
 
 // AI Image Generation Models
 export type AIGenerationModel = 'nano-banana' | 'nano-banana-pro' | 'gemini-flash' | 'gemini-pro';
@@ -129,6 +93,7 @@ export interface AIModelOption {
   supportsEnhancePrompt: boolean;
   supportsImageSize: boolean;
   aspectRatioOptions: readonly string[];
+  imageSizeOptions: readonly ImageSize[]; // Available image sizes for this model
 }
 
 export const AI_MODEL_OPTIONS: AIModelOption[] = [
@@ -142,8 +107,9 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
     supportsPersonGeneration: true,
     supportsSeed: true,
     supportsEnhancePrompt: true,
-    supportsImageSize: false,
+    supportsImageSize: true,
     aspectRatioOptions: IMAGEN_ASPECT_RATIOS,
+    imageSizeOptions: ['1K', '2K'],
   },
   {
     value: 'nano-banana-pro',
@@ -155,8 +121,9 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
     supportsPersonGeneration: true,
     supportsSeed: true,
     supportsEnhancePrompt: true,
-    supportsImageSize: false,
+    supportsImageSize: true,
     aspectRatioOptions: IMAGEN_ASPECT_RATIOS,
+    imageSizeOptions: ['1K', '2K'],
   },
   {
     value: 'gemini-flash',
@@ -170,6 +137,7 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
     supportsEnhancePrompt: false,
     supportsImageSize: true,
     aspectRatioOptions: GEMINI_ASPECT_RATIOS,
+    imageSizeOptions: ['1K'], // Flash only supports 1K
   },
   {
     value: 'gemini-pro',
@@ -183,6 +151,7 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
     supportsEnhancePrompt: false,
     supportsImageSize: true,
     aspectRatioOptions: GEMINI_ASPECT_RATIOS,
+    imageSizeOptions: ['1K', '2K', '4K'], // Pro supports up to 4K
   },
 ];
 
@@ -194,3 +163,28 @@ export interface ReferenceImageRow {
   mimeType?: string;    // For API
   description: string;  // User's description of how to use this image
 }
+
+// Prompt snippets for reference image descriptions
+export interface ReferenceImageSnippet {
+  id: string;
+  labelKey: string; // Translation key
+  text: string;     // Text to append
+}
+
+export const REFERENCE_IMAGE_SNIPPETS: ReferenceImageSnippet[] = [
+  {
+    id: 'style',
+    labelKey: 'snippetStyle',
+    text: 'Use the artistic style and color palette from this image. ',
+  },
+  {
+    id: 'expand',
+    labelKey: 'snippetExpand',
+    text: 'Extend this image to show more of the surrounding scene. ',
+  },
+  {
+    id: 'variation',
+    labelKey: 'snippetVariation',
+    text: 'Create a similar composition but with different elements. ',
+  },
+];

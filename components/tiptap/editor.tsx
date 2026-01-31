@@ -35,7 +35,6 @@ import {
   List,
   ListOrdered,
   Merge,
-  Music,
   Quote,
   Rows,
   TextQuote,
@@ -45,7 +44,6 @@ import {
   Twitter,
   Underline as UnderlineIcon,
 } from 'lucide-react';
-import { CldUploadWidget } from 'next-cloudinary';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
@@ -95,13 +93,6 @@ interface EditorProps {
   onMediaAdded?: () => void;
 }
 
-interface UploadResult {
-  info?:
-    | {
-        secure_url: string;
-      }
-    | string;
-}
 
 export default function Editor({
   content = '',
@@ -279,28 +270,6 @@ export default function Editor({
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  const onImageUpload = useCallback(
-    (result: UploadResult) => {
-      if (
-        editor &&
-        typeof result.info === 'object' &&
-        result.info?.secure_url
-      ) {
-        editor
-          .chain()
-          .focus()
-          .setImage({
-            src: result.info.secure_url,
-            alt: 'Uploaded image',
-            title: 'Click to edit image properties',
-          })
-          .run();
-      }
-    },
-    [editor]
-  );
-
 
   const insertLayout = useCallback(() => {
     if (!editor) return;
@@ -709,25 +678,6 @@ export default function Editor({
 
         {/* GROUP 6: MEDIA MANAGEMENT */}
         <ButtonGroup>
-          <CldUploadWidget onSuccess={onImageUpload} uploadPreset="markazshaafii">
-            {({ open }) => {
-              const onClick = () => {
-                open();
-              };
-              return (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClick}
-                  size="sm"
-                  className="bg-transparent border-input"
-                >
-                  <ImagePlus className="h-4 w-4" />
-                  {t('imageCloud')}
-                </Button>
-              );
-            }}
-          </CldUploadWidget>
           <Button
             type="button"
             variant="outline"
@@ -740,7 +690,7 @@ export default function Editor({
               setIsMediaLibraryOpen(true);
             }}
           >
-            <Music className="h-4 w-4" />
+            <ImagePlus className="h-4 w-4" />
             {t('media')}
           </Button>
         </ButtonGroup>

@@ -12,11 +12,16 @@ export interface SaveGeneratedImageParams {
   mimeType: string;
   prompt: string;
   model: string;
+  // Optional metadata overrides
+  altText?: string;
+  slug?: string;
+  description?: string;
 }
 
 interface SaveGeneratedImageResult {
   success: boolean;
   mediaId?: string;
+  mediaSlug?: string;
   imageUrl?: string;
   error?: string;
 }
@@ -33,6 +38,9 @@ const saveGeneratedImage = async (
     mimeType,
     prompt,
     model,
+    altText,
+    slug: customSlug,
+    description,
   } = params;
 
   if (!projectId) {
@@ -47,7 +55,7 @@ const saveGeneratedImage = async (
     const supabase = await createClient();
 
     // 1. Create media record
-    const slug = `ai-gen-${Date.now()}`;
+    const slug = customSlug || `ai-gen-${Date.now()}`;
     const { data: media, error: mediaError } = await supabase
       .from('media')
       .insert({
@@ -59,8 +67,8 @@ const saveGeneratedImage = async (
         original_name: fileName,
         slug,
         url: imageUrl,
-        alt_text: prompt.substring(0, 200),
-        description: `AI generated with ${model}`,
+        alt_text: altText || prompt.substring(0, 200),
+        description: description || `AI generated with ${model}`,
       })
       .select()
       .single();
@@ -112,7 +120,7 @@ const saveGeneratedImage = async (
     revalidatePath('/images');
     revalidatePath(`/images/${projectId}`);
 
-    return { success: true, mediaId: media.id, imageUrl };
+    return { success: true, mediaId: media.id, mediaSlug: slug, imageUrl };
   } catch (error) {
     console.error('Error saving generated image:', error);
     return {

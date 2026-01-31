@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { MediaWithProfile, MediaFilters } from '@/actions/media/get-media';
 import { MediaItem } from './media-item';
+import { ImageGridItem } from './image-grid-item';
 import { MediaUploadDialog } from './media-upload-dialog';
 import { toast } from 'sonner';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -206,7 +207,7 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
               </div>
             </div>
 
-            {/* Media Table */}
+            {/* Media Display */}
             <ScrollArea className="flex-1">
               {isLoading ? (
                 <div className="flex items-center justify-center h-32">
@@ -218,7 +219,21 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
                   <p>No media found</p>
                   <p className="text-sm">Try adjusting your search or upload new media</p>
                 </div>
+              ) : selectedType === 'image' ? (
+                /* Grid view for images */
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-1">
+                  {media.map((mediaItem) => (
+                    <ImageGridItem
+                      key={mediaItem.id}
+                      media={mediaItem}
+                      isSelected={selectedMedia.some(item => item.id === mediaItem.id)}
+                      isHighlighted={highlightedMediaIds.has(mediaItem.id)}
+                      onSelect={() => handleMediaSelect(mediaItem)}
+                    />
+                  ))}
+                </div>
               ) : (
+                /* Table view for other media types */
                 <Table>
                   <TableHeader>
                     <TableRow>

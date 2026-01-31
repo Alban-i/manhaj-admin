@@ -17,6 +17,7 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   ClassificationWithTranslations,
   Language,
@@ -30,6 +31,7 @@ import { upsertClassificationTranslations } from '@/actions/upsert-classificatio
 import { getLanguageWithFlag } from '@/i18n/config';
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
+import ImageUpload from '@/components/image-upload';
 
 interface ClassificationFormProps {
   classification: ClassificationWithTranslations;
@@ -47,32 +49,41 @@ const ClassificationForm: React.FC<ClassificationFormProps> = ({
   const router = useRouter();
 
   // Build dynamic form schema based on active languages
-  const translationSchema: Record<string, z.ZodString> = {};
+  const translationSchema: Record<string, z.ZodObject<{ name: z.ZodString; description: z.ZodString }>> = {};
   languages.forEach((lang) => {
-    // Arabic is required, others are optional
+    // Arabic name is required, others are optional
     if (lang.code === 'ar') {
-      translationSchema[lang.code] = z
-        .string()
-        .min(1, t('translationRequired'));
+      translationSchema[lang.code] = z.object({
+        name: z.string().min(1, t('translationRequired')),
+        description: z.string(),
+      });
     } else {
-      translationSchema[lang.code] = z.string();
+      translationSchema[lang.code] = z.object({
+        name: z.string(),
+        description: z.string(),
+      });
     }
   });
 
   const formSchema = z.object({
     slug: z.string().min(1, t('slugRequired')),
+    display_order: z.coerce.number().int().min(0),
+    cover_image: z.string().optional(),
     translations: z.object(translationSchema),
   });
 
   type FormValues = z.infer<typeof formSchema>;
 
   // Build default values from existing translations
-  const defaultTranslations: Record<string, string> = {};
+  const defaultTranslations: Record<string, { name: string; description: string }> = {};
   languages.forEach((lang) => {
     const existing = classification.translations.find(
       (tr) => tr.language === lang.code
     );
-    defaultTranslations[lang.code] = existing?.name ?? '';
+    defaultTranslations[lang.code] = {
+      name: existing?.name ?? '',
+      description: existing?.description ?? '',
+    };
   });
 
   // Get the Arabic translation for display
@@ -85,6 +96,8 @@ const ClassificationForm: React.FC<ClassificationFormProps> = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       slug: classification.slug,
+      display_order: classification.display_order ?? 0,
+      cover_image: classification.cover_image ?? '',
       translations: defaultTranslations,
     },
   });
@@ -93,11 +106,22 @@ const ClassificationForm: React.FC<ClassificationFormProps> = ({
     try {
       setLoading(true);
 
-      // Update classification slug if changed
+      // Update classification slug, display_order, and cover_image
+      const updateData: { slug?: string; display_order?: number; cover_image?: string | null } = {};
       if (values.slug !== classification.slug) {
+        updateData.slug = values.slug;
+      }
+      if (values.display_order !== classification.display_order) {
+        updateData.display_order = values.display_order;
+      }
+      if (values.cover_image !== (classification.cover_image ?? '')) {
+        updateData.cover_image = values.cover_image || null;
+      }
+
+      if (Object.keys(updateData).length > 0) {
         const { error } = await supabase
           .from('classifications')
-          .update({ slug: values.slug })
+          .update(updateData)
           .eq('id', classification.id);
 
         if (error) {
@@ -108,10 +132,11 @@ const ClassificationForm: React.FC<ClassificationFormProps> = ({
 
       // Update translations
       const translationData = Object.entries(values.translations)
-        .filter(([_, name]) => name && name.trim() !== '')
-        .map(([language, name]) => ({
+        .filter(([_, data]) => data.name && data.name.trim() !== '')
+        .map(([language, data]) => ({
           language,
-          name: name.trim(),
+          name: data.name.trim(),
+          description: data.description?.trim() || undefined,
         }));
 
       const result = await upsertClassificationTranslations(
@@ -153,12 +178,12 @@ const ClassificationForm: React.FC<ClassificationFormProps> = ({
               </CardHeader>
             </Card>
 
-            {/* SLUG */}
+            {/* SLUG & SETTINGS */}
             <Card>
               <CardHeader>
-                <CardTitle>{t('slug')}</CardTitle>
+                <CardTitle>{t('settings')}</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="slug"
@@ -178,6 +203,48 @@ const ClassificationForm: React.FC<ClassificationFormProps> = ({
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="display_order"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('displayOrder')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="0"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t('displayOrderDescription')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="cover_image"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>{t('coverImage')}</FormLabel>
+                      <FormControl>
+                        <ImageUpload
+                          disabled={loading}
+                          value={field.value ? [field.value] : []}
+                          onChange={(url: string) => field.onChange(url)}
+                          onRemove={() => field.onChange('')}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t('coverImageSize')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 
@@ -186,33 +253,53 @@ const ClassificationForm: React.FC<ClassificationFormProps> = ({
               <CardHeader>
                 <CardTitle>{t('translations')}</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-x-2 gap-y-4">
+              <CardContent className="grid grid-cols-1 gap-6">
                 {languages.map((lang) => (
-                  <FormField
-                    key={lang.code}
-                    control={form.control}
-                    name={`translations.${lang.code}`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          {getLanguageWithFlag(lang.code, lang.name)}
-                          {lang.code === 'ar' && (
-                            <Badge variant="secondary" className="text-xs">
-                              {t('required')}
-                            </Badge>
-                          )}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={`${t('classificationNameIn')} ${lang.name}`}
-                            dir={lang.direction}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div key={lang.code} className="space-y-4 p-4 border rounded-lg">
+                    <div className="flex items-center gap-2">
+                      {getLanguageWithFlag(lang.code, lang.name)}
+                      {lang.code === 'ar' && (
+                        <Badge variant="secondary" className="text-xs">
+                          {t('required')}
+                        </Badge>
+                      )}
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name={`translations.${lang.code}.name`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('name')}</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={`${t('classificationNameIn')} ${lang.name}`}
+                              dir={lang.direction}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`translations.${lang.code}.description`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('description')}</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder={`${t('classificationDescriptionIn')} ${lang.name}`}
+                              dir={lang.direction}
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 ))}
               </CardContent>
             </Card>

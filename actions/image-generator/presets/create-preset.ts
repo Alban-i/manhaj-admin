@@ -28,7 +28,6 @@ const createImagePreset = async (formData: ImagePresetFormData): Promise<CreateP
       style_reference_url: formData.style_reference_url || null,
       width: formData.width,
       height: formData.height,
-      text_config: formData.text_config,
       created_by: user.id,
     })
     .select('id')

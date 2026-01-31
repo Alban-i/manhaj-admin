@@ -20,7 +20,6 @@ const updateImagePreset = async (id: string, formData: ImagePresetFormData): Pro
       style_reference_url: formData.style_reference_url || null,
       width: formData.width,
       height: formData.height,
-      text_config: formData.text_config,
     })
     .eq('id', id);
 

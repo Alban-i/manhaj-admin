@@ -1,4 +1,4 @@
-import { CldImage } from 'next-cloudinary';
+import Image from 'next/image';
 
 interface LoadImageProps {
   url: string | null;
@@ -13,13 +13,14 @@ const LoadImage: React.FC<LoadImageProps> = ({ url, size, alt }) => {
         height: `${size}px`,
         width: `${size}px`,
       }}
+      className="relative"
     >
-      <CldImage
-        width={size}
-        height={size}
+      <Image
+        fill
         src={url}
         alt={alt}
-        className="rounded-lg"
+        className="rounded-lg object-cover"
+        sizes={`${size}px`}
       />
     </div>
   ) : (
@@ -28,8 +29,8 @@ const LoadImage: React.FC<LoadImageProps> = ({ url, size, alt }) => {
         height: `${size}px`,
         width: `${size}px`,
       }}
-      className={`bg-secondary rounded-lg`}
-    ></div>
+      className="bg-secondary rounded-lg"
+    />
   );
 };
 

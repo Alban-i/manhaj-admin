@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 type TranslationInput = {
   language: string;
   name: string;
+  description?: string;
 };
 
 export async function upsertClassificationTranslations(
@@ -28,6 +29,7 @@ export async function upsertClassificationTranslations(
     classification_id: classificationId,
     language: t.language,
     name: t.name.trim(),
+    description: t.description?.trim() || null,
     updated_at: new Date().toISOString(),
   }));
 
