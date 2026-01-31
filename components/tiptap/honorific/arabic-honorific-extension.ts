@@ -1,6 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import { HonorificNodeView } from './honorific-node-view';
+import { HONORIFICS, isValidHonorific } from '@/lib/honorifics';
 
 export interface ArabicHonorificOptions {
   HTMLAttributes: Record<string, unknown>;
@@ -44,6 +45,14 @@ export const ArabicHonorificExtension = Node.create<ArabicHonorificOptions>({
 
   renderHTML({ HTMLAttributes }) {
     return ['span', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+  },
+
+  renderText({ node }) {
+    const honorificType = node.attrs.honorificType;
+    if (isValidHonorific(honorificType)) {
+      return HONORIFICS[honorificType].arabic;
+    }
+    return '';
   },
 
   addNodeView() {
