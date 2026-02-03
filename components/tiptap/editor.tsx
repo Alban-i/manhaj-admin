@@ -36,6 +36,7 @@ import {
   ListOrdered,
   Merge,
   Quote,
+  Redo2,
   Rows,
   TextQuote,
   Split,
@@ -43,6 +44,7 @@ import {
   Trash2,
   Twitter,
   Underline as UnderlineIcon,
+  Undo2,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -403,6 +405,31 @@ export default function Editor({
     <div className="w-full">
       {/* MENU BAR */}
       <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-muted rounded-lg">
+        {/* GROUP 0: Undo & Redo */}
+        <ButtonGroup>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().undo()}
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().redo()}
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
+        </ButtonGroup>
+        <Separator orientation="vertical" className="h-6" />
+
         {/* GROUP 1: Bold & Italic */}
         <ButtonGroup>
           <Toggle

@@ -53,6 +53,28 @@ The app uses TipTap with custom extensions:
 
 Extensions are in `/extensions/` and handle both rendering and data persistence.
 
+## Related Projects
+
+### IslamicEditor (Desktop)
+A Tauri 2 + React desktop book editor at `/Users/albanidrizaj/Documents/Projects/IslamicEditor` that shares TipTap patterns with this project:
+
+**Shared Extension Patterns:**
+- `honorific/` - Arabic honorific phrases (صلى الله عليه وسلم, etc.) as atomic inline nodes
+- `quote/` - Quranic verse and translation blocks with floating toolbar
+- `auto-text-direction.ts` - Automatic RTL/LTR detection per paragraph
+
+**Key Locations in IslamicEditor:**
+- Editor component: `src/components/editor/page-editor.tsx`
+- TipTap extensions: `src/lib/tiptap-extensions/`
+- Editor context: `src/contexts/editor-context.tsx`
+
+**Architecture Differences:**
+| Aspect | Manhaj Admin | IslamicEditor |
+|--------|-------------|---------------|
+| Platform | Web (Next.js) | Desktop (Tauri + React) |
+| Database | Supabase PostgreSQL | SQLite local + Supabase sync |
+| Storage | Cloudinary | Local + Supabase buckets |
+
 ## Authentication & Authorization
 
 - Uses Supabase Auth with middleware protection
