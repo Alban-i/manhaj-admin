@@ -1,5 +1,5 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,6 +20,7 @@ const AudioNodeView = ({
   selected,
   getPos,
 }: NodeViewProps) => {
+  const titleInputId = useId();
   const [isDragging, setIsDragging] = useState(false);
   const [isTitleDialogOpen, setIsTitleDialogOpen] = useState(false);
   const [titleInput, setTitleInput] = useState('');
@@ -108,6 +109,8 @@ const AudioNodeView = ({
           </DialogHeader>
           <div className="py-4">
             <Input
+              id={titleInputId}
+              autoComplete="off"
               value={titleInput}
               onChange={(e) => setTitleInput(e.target.value)}
               placeholder="Enter title..."

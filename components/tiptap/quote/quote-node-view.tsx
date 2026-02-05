@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { NodeViewWrapper, NodeViewContent, NodeViewProps } from '@tiptap/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,8 @@ const QuoteNodeView = ({
   getPos,
   editor,
 }: NodeViewProps) => {
+  const sourceLabelId = useId();
+  const sourceUrlId = useId();
   const [sourcePopoverOpen, setSourcePopoverOpen] = useState(false);
   const [tempSourceLabel, setTempSourceLabel] = useState(
     node.attrs.sourceLabel || ''
@@ -122,11 +124,15 @@ const QuoteNodeView = ({
             <div className="flex flex-col gap-3">
               <div className="font-medium text-sm">Source</div>
               <Input
+                id={sourceLabelId}
+                autoComplete="off"
                 placeholder="Source label (e.g., Surah Al-Baqarah: 255)"
                 value={tempSourceLabel}
                 onChange={(e) => setTempSourceLabel(e.target.value)}
               />
               <Input
+                id={sourceUrlId}
+                autoComplete="off"
                 placeholder="Source URL (optional)"
                 value={tempSourceUrl}
                 onChange={(e) => setTempSourceUrl(e.target.value)}

@@ -129,6 +129,7 @@ export function AudioPlayer({ src, title }: AudioPlayerProps) {
               {formatTime(currentTime)}
             </span>
             <Slider
+              name="audio-progress"
               value={[currentTime]}
               max={duration}
               step={1}
