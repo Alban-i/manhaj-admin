@@ -32,11 +32,11 @@ export async function POST(request: Request) {
           {
             role: 'system',
             content:
-              'You are a helpful assistant that generates concise article summaries. Make the summary in the same language as the article.',
+              'You are an SEO specialist that generates article summaries used as meta descriptions and website previews. Always write in the same language as the article. Front-load the main topic and keywords within the first 155 characters, as search engines truncate after that point.',
           },
           {
             role: 'user',
-            content: `Please generate a summary of the following article content in 500 characters or less and in the same language as the article:\n\n${content}`,
+            content: `Generate an engaging summary of 300 characters or less for the following article:\n\n${content}`,
           },
         ],
         max_tokens: 500,

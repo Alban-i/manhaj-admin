@@ -18,6 +18,7 @@ import {
 import DeleteButton from '@/components/delete-btn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ExternalLinksInput } from '@/components/ui/external-links-input';
 import { type ExternalLink } from '@/lib/parse-external-link';
 import { useRouter } from 'next/navigation';
@@ -40,7 +41,7 @@ import { IndividualWithType } from '@/actions/get-individual';
 import { IndividualTranslation } from '@/actions/get-individual-translations';
 import { Language } from '@/types/types';
 import { Json } from '@/types/types_db';
-import { Globe, Plus, Star, Link2 } from 'lucide-react';
+import { Globe, Plus, Star, Link2, Wand2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
@@ -72,6 +73,7 @@ const formSchema = z.object({
   language: z.string().min(1, 'Language is required'),
   is_original: z.boolean(),
   external_links: z.array(externalLinkSchema),
+  summary: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -104,6 +106,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
     individual?.content_json ?? null
   );
   const [loading, setLoading] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   const defaultValues = {
     name: individual?.name ?? '',
@@ -117,6 +120,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
     id: individual?.id,
     individual_id: individual?.individual_id ?? null,
     external_links: (individual?.external_links as ExternalLink[]) ?? [],
+    summary: individual?.summary ?? '',
   };
 
   const form = useForm<FormValues>({
@@ -131,6 +135,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       language: defaultValues.language,
       is_original: defaultValues.is_original,
       external_links: defaultValues.external_links,
+      summary: defaultValues.summary,
     },
   });
 
@@ -211,6 +216,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
         slug: values.slug,
         content: content || null,
         content_json: contentJson,
+        summary: values.summary || null,
         status: values.status,
         language: values.language,
         is_original: values.is_original,
@@ -277,6 +283,38 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       router.refresh();
     } catch (error) {
       toast.error('Something went wrong');
+    }
+  };
+
+  const generateSummary = async () => {
+    if (!content) {
+      toast.error('Add content first before generating a summary.');
+      return;
+    }
+
+    try {
+      setIsGeneratingSummary(true);
+      const response = await fetch('/api/ai/generate-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate summary');
+      }
+
+      const data = await response.json();
+      form.setValue('summary', data.summary, { shouldDirty: true });
+      toast.success('Summary generated successfully.');
+    } catch (error) {
+      toast.error('Failed to generate summary.');
+      console.error('Error generating summary:', error);
+    } finally {
+      setIsGeneratingSummary(false);
     }
   };
 
@@ -383,6 +421,49 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                             ))}
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* SUMMARY */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Summary</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={generateSummary}
+                      disabled={isGeneratingSummary}
+                    >
+                      {isGeneratingSummary ? (
+                        'Generating...'
+                      ) : (
+                        <>
+                          <Wand2 className="mr-2 h-4 w-4" />
+                          Generate with AI
+                        </>
+                      )}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="summary"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea
+                            placeholder="A short summary of this individual..."
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

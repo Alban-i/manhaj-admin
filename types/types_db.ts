@@ -433,6 +433,105 @@ export type Database = {
         }
         Relationships: []
       }
+      editor_books: {
+        Row: {
+          author: string | null
+          content_json: Json | null
+          created_at: string | null
+          id: string
+          language: string | null
+          metadata: Json | null
+          style_overrides: Json | null
+          style_preset_id: string | null
+          subtitle: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          author?: string | null
+          content_json?: Json | null
+          created_at?: string | null
+          id?: string
+          language?: string | null
+          metadata?: Json | null
+          style_overrides?: Json | null
+          style_preset_id?: string | null
+          subtitle?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          author?: string | null
+          content_json?: Json | null
+          created_at?: string | null
+          id?: string
+          language?: string | null
+          metadata?: Json | null
+          style_overrides?: Json | null
+          style_preset_id?: string | null
+          subtitle?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      editor_chapters: {
+        Row: {
+          book_id: string
+          content_json: Json | null
+          created_at: string | null
+          depth: number | null
+          id: string
+          parent_id: string | null
+          position: number
+          style_overrides: Json | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          book_id: string
+          content_json?: Json | null
+          created_at?: string | null
+          depth?: number | null
+          id?: string
+          parent_id?: string | null
+          position: number
+          style_overrides?: Json | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          book_id?: string
+          content_json?: Json | null
+          created_at?: string | null
+          depth?: number | null
+          id?: string
+          parent_id?: string | null
+          position?: number
+          style_overrides?: Json | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editor_chapters_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "editor_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editor_chapters_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "editor_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       glossary: {
         Row: {
           created_at: string | null
@@ -678,6 +777,7 @@ export type Database = {
           ranking: string | null
           slug: string
           status: string
+          summary: string | null
           type_id: number | null
           updated_at: string | null
           views: number
@@ -696,6 +796,7 @@ export type Database = {
           ranking?: string | null
           slug: string
           status?: string
+          summary?: string | null
           type_id?: number | null
           updated_at?: string | null
           views?: number
@@ -714,6 +815,7 @@ export type Database = {
           ranking?: string | null
           slug?: string
           status?: string
+          summary?: string | null
           type_id?: number | null
           updated_at?: string | null
           views?: number
