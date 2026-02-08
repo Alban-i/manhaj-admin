@@ -7,7 +7,7 @@ export function SidebarVersion() {
   const buildTime = process.env.NEXT_PUBLIC_BUILD_TIME || 'Development';
 
   return (
-    <SidebarGroup>
+    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupContent>
         <SidebarMenu>
           <SidebarMenuItem>

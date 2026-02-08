@@ -205,7 +205,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   ];
 
   return (
-    <Sidebar variant="inset" side={isRtl ? 'right' : 'left'} {...props}>
+    <Sidebar variant="inset" collapsible="icon" side={isRtl ? 'right' : 'left'} {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
