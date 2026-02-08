@@ -1210,6 +1210,41 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          created_at: string | null
+          id: number
+          key: string
+          language: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: never
+          key: string
+          language?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: never
+          key?: string
+          language?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_settings_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       tag_translations: {
         Row: {
           created_at: string | null

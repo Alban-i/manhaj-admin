@@ -25,6 +25,7 @@ import {
   History,
   Palette,
   ImagePlus,
+  Settings,
 } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 
@@ -201,6 +202,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       name: t('languages'),
       url: '/languages',
       icon: Globe,
+    },
+    {
+      name: t('settings'),
+      url: '/settings',
+      icon: Settings,
     },
   ];
 

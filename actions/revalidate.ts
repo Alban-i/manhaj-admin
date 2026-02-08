@@ -107,6 +107,13 @@ export async function revalidateTypes(): Promise<boolean> {
 }
 
 /**
+ * Revalidate site settings caches.
+ */
+export async function revalidateSiteSettings(): Promise<boolean> {
+  return revalidateFrontend(['site-settings']);
+}
+
+/**
  * Revalidate all content caches (for major changes).
  */
 export async function revalidateAll(): Promise<boolean> {
