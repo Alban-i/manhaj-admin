@@ -12,8 +12,9 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Language } from '@/types/types';
 
-const SETTING_LABELS: Record<string, string> = {
-  footer_description: 'Footer — Description',
+const SETTING_CONFIG: Record<string, { label: string; placeholder: string; rows: number }> = {
+  site_description: { label: 'Meta — Description du site', placeholder: 'Description courte du site (texte brut)', rows: 3 },
+  footer_description: { label: 'Footer — Description', placeholder: '<p>Ligne 1</p><p>Ligne 2</p>', rows: 6 },
 };
 
 interface SettingsFormProps {
@@ -30,7 +31,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
   const supabase = createClient();
   const router = useRouter();
 
-  const settingKeys = Object.keys(SETTING_LABELS);
+  const settingKeys = Object.keys(SETTING_CONFIG);
 
   const handleChange = (key: string, lang: string, html: string) => {
     setValues((prev) => ({
@@ -91,7 +92,7 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
       {settingKeys.map((key) => (
         <Card key={key}>
           <CardHeader>
-            <CardTitle className="text-base">{SETTING_LABELS[key]}</CardTitle>
+            <CardTitle className="text-base">{SETTING_CONFIG[key].label}</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue={languages[0]?.code}>
@@ -108,9 +109,9 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
                     <Label>{lang.native_name} ({lang.code})</Label>
                     <Textarea
                       dir={lang.direction === 'rtl' ? 'rtl' : 'ltr'}
-                      rows={6}
+                      rows={SETTING_CONFIG[key].rows}
                       className="font-mono text-sm"
-                      placeholder="<p>Line 1</p><p>Line 2</p>"
+                      placeholder={SETTING_CONFIG[key].placeholder}
                       value={values[key]?.[lang.code] ?? ''}
                       onChange={(e) =>
                         handleChange(key, lang.code, e.target.value)
