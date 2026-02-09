@@ -14,6 +14,7 @@ import { Language } from '@/types/types';
 
 const SETTING_CONFIG: Record<string, { label: string; placeholder: string; rows: number }> = {
   site_description: { label: 'Meta — Description du site', placeholder: 'Description courte du site (texte brut)', rows: 3 },
+  articles_description: { label: 'Meta — Description des articles', placeholder: 'Description de la page articles (texte brut)', rows: 3 },
   footer_description: { label: 'Footer — Description', placeholder: '<p>Ligne 1</p><p>Ligne 2</p>', rows: 6 },
 };
 
