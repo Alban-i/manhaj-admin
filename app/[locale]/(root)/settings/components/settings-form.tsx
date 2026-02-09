@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createClient } from '@/providers/supabase/client';
 import { revalidateFrontend } from '@/actions/revalidate';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Language } from '@/types/types';
-import Editor from '@/components/tiptap/editor';
 
 const SETTING_LABELS: Record<string, string> = {
   footer_description: 'Footer — Description',
@@ -92,16 +93,33 @@ const SettingsForm: React.FC<SettingsFormProps> = ({
           <CardHeader>
             <CardTitle className="text-base">{SETTING_LABELS[key]}</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-6">
-            {languages.map((lang) => (
-              <div key={lang.code} className="space-y-1.5">
-                <Label>{lang.native_name} ({lang.code})</Label>
-                <Editor
-                  content={values[key]?.[lang.code] ?? ''}
-                  onChange={(html) => handleChange(key, lang.code, html)}
-                />
-              </div>
-            ))}
+          <CardContent>
+            <Tabs defaultValue={languages[0]?.code}>
+              <TabsList>
+                {languages.map((lang) => (
+                  <TabsTrigger key={lang.code} value={lang.code}>
+                    {lang.native_name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {languages.map((lang) => (
+                <TabsContent key={lang.code} value={lang.code}>
+                  <div className="space-y-1.5">
+                    <Label>{lang.native_name} ({lang.code})</Label>
+                    <Textarea
+                      dir={lang.direction === 'rtl' ? 'rtl' : 'ltr'}
+                      rows={6}
+                      className="font-mono text-sm"
+                      placeholder="<p>Line 1</p><p>Line 2</p>"
+                      value={values[key]?.[lang.code] ?? ''}
+                      onChange={(e) =>
+                        handleChange(key, lang.code, e.target.value)
+                      }
+                    />
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
           </CardContent>
         </Card>
       ))}
