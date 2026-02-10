@@ -532,6 +532,285 @@ export type Database = {
           },
         ]
       }
+      fatawa: {
+        Row: {
+          author_id: string | null
+          classification_id: number | null
+          created_at: string | null
+          group_id: string | null
+          id: string
+          individual_id: string | null
+          media_id: string | null
+          source: string | null
+          source_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          classification_id?: number | null
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          individual_id?: string | null
+          media_id?: string | null
+          source?: string | null
+          source_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          classification_id?: number | null
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          individual_id?: string | null
+          media_id?: string | null
+          source?: string | null
+          source_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatawa_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatawa_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "fatwa_classifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatawa_individual_id_fkey"
+            columns: ["individual_id"]
+            isOneToOne: false
+            referencedRelation: "individuals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatawa_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fatwa_classification_translations: {
+        Row: {
+          classification_id: number
+          created_at: string | null
+          description: string | null
+          id: number
+          language: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          classification_id: number
+          created_at?: string | null
+          description?: string | null
+          id?: never
+          language: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          classification_id?: number
+          created_at?: string | null
+          description?: string | null
+          id?: never
+          language?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatwa_classification_translations_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "fatwa_classifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatwa_classification_translations_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      fatwa_classifications: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: number
+          parent_id: number | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: number
+          parent_id?: number | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: number
+          parent_id?: number | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatwa_classifications_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "fatwa_classifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fatwa_tags: {
+        Row: {
+          created_at: string | null
+          fatwa_id: string
+          tag_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          fatwa_id: string
+          tag_id: number
+        }
+        Update: {
+          created_at?: string | null
+          fatwa_id?: string
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatwa_tags_fatwa_id_fkey"
+            columns: ["fatwa_id"]
+            isOneToOne: false
+            referencedRelation: "fatwa_translations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatwa_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fatwa_translations: {
+        Row: {
+          answer: string
+          answer_json: Json | null
+          created_at: string | null
+          fatwa_id: string
+          id: string
+          is_original: boolean | null
+          language: string
+          published_at: string | null
+          question: string
+          question_json: Json | null
+          slug: string
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string | null
+          views: number | null
+        }
+        Insert: {
+          answer: string
+          answer_json?: Json | null
+          created_at?: string | null
+          fatwa_id: string
+          id?: string
+          is_original?: boolean | null
+          language?: string
+          published_at?: string | null
+          question: string
+          question_json?: Json | null
+          slug: string
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Update: {
+          answer?: string
+          answer_json?: Json | null
+          created_at?: string | null
+          fatwa_id?: string
+          id?: string
+          is_original?: boolean | null
+          language?: string
+          published_at?: string | null
+          question?: string
+          question_json?: Json | null
+          slug?: string
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatwa_translations_fatwa_id_fkey"
+            columns: ["fatwa_id"]
+            isOneToOne: false
+            referencedRelation: "fatawa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatwa_translations_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      fatwa_view_tracking: {
+        Row: {
+          fatwa_id: string
+          ip_address: string
+          viewed_at: string | null
+        }
+        Insert: {
+          fatwa_id: string
+          ip_address: string
+          viewed_at?: string | null
+        }
+        Update: {
+          fatwa_id?: string
+          ip_address?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatwa_view_tracking_fatwa_id_fkey"
+            columns: ["fatwa_id"]
+            isOneToOne: false
+            referencedRelation: "fatwa_translations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       glossary: {
         Row: {
           created_at: string | null
@@ -1183,6 +1462,39 @@ export type Database = {
           },
         ]
       }
+      related_fatawa: {
+        Row: {
+          created_at: string | null
+          fatwa_id: string
+          related_fatwa_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          fatwa_id: string
+          related_fatwa_id: string
+        }
+        Update: {
+          created_at?: string | null
+          fatwa_id?: string
+          related_fatwa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "related_fatawa_fatwa_id_fkey"
+            columns: ["fatwa_id"]
+            isOneToOne: false
+            referencedRelation: "fatawa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "related_fatawa_related_fatwa_id_fkey"
+            columns: ["related_fatwa_id"]
+            isOneToOne: false
+            referencedRelation: "fatawa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roles: {
         Row: {
           created_at: string | null
@@ -1604,6 +1916,10 @@ export type Database = {
       cleanup_old_view_tracking: { Args: never; Returns: undefined }
       increment_article_views: {
         Args: { article_slug: string; viewer_ip: string }
+        Returns: boolean
+      }
+      increment_fatwa_views: {
+        Args: { fatwa_slug: string; viewer_ip: string }
         Returns: boolean
       }
       increment_individual_views: {

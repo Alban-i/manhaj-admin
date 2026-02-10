@@ -26,6 +26,8 @@ import {
   Palette,
   ImagePlus,
   Settings,
+  Scale,
+  FolderTree,
 } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 
@@ -105,6 +107,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: t('timelines'),
           icon: History,
           url: '/timelines',
+        },
+        {
+          title: t('fatawa'),
+          icon: Scale,
+          url: '/fatawa',
+        },
+        {
+          title: t('fatwaClassifications'),
+          icon: FolderTree,
+          url: '/fatwa-classifications',
         },
       ],
     },

@@ -88,3 +88,19 @@ export type EventDatePrecision = 'day' | 'month' | 'year' | 'decade' | 'century'
 
 export type ImagePreset = Database['public']['Tables']['image_presets']['Row'];
 export type ImageProject = Database['public']['Tables']['image_projects']['Row'];
+
+// Fatawa types
+export type FatwaStatus = 'draft' | 'published' | 'archived';
+
+export type FatwaClassification = Database['public']['Tables']['fatwa_classifications']['Row'];
+export type FatwaClassificationTranslation = Database['public']['Tables']['fatwa_classification_translations']['Row'];
+export type FatwaClassificationWithTranslations = FatwaClassification & {
+  fatwa_classification_translations: FatwaClassificationTranslation[];
+};
+
+export type Fatwa = Database['public']['Tables']['fatawa']['Row'];
+export type FatwaTranslation = Database['public']['Tables']['fatwa_translations']['Row'];
+
+export type FatwaInList = Omit<FatwaTranslation, 'status'> & {
+  status: FatwaStatus;
+};

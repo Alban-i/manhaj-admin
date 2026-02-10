@@ -114,6 +114,21 @@ export async function revalidateSiteSettings(): Promise<boolean> {
 }
 
 /**
+ * Revalidate fatwa caches.
+ * Invalidates: fatawa list, specific fatwa
+ */
+export async function revalidateFatwa(slug: string): Promise<boolean> {
+  return revalidateFrontend(['fatawa', `fatwa-${slug}`]);
+}
+
+/**
+ * Revalidate all fatwa-related caches (for deletion).
+ */
+export async function revalidateFatawa(): Promise<boolean> {
+  return revalidateFrontend(['fatawa']);
+}
+
+/**
  * Revalidate all content caches (for major changes).
  */
 export async function revalidateAll(): Promise<boolean> {
