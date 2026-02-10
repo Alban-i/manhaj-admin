@@ -62,7 +62,7 @@ import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon, FileEdit, Archive, Settings, Check, ChevronsUpDown } from 'lucide-react';
+import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon, FileEdit, Archive, Settings, Check, ChevronsUpDown, Loader2, X } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import arabic from 'react-date-object/calendars/arabic';
@@ -164,6 +164,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   type FormStatus = 'draft' | 'published' | 'system' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
     (defaultValues.status?.toLowerCase() as FormStatus) ?? 'draft'
+  );
+  const [embeddingStatus, setEmbeddingStatus] = useState<'idle' | 'generating' | 'success' | 'error'>(
+    (article as any)?.embedding ? 'success' : 'idle'
   );
 
   const supabase = createClient();
@@ -403,6 +406,21 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       initialContentRef.current = content;
 
       toast.success(toastMessage);
+
+      // Generate embedding for semantic search
+      setEmbeddingStatus('generating');
+      supabase.functions
+        .invoke('embeddings', {
+          body: { action: 'generate', article_id: data.id },
+        })
+        .then((res) => {
+          if (res.error || !res.data?.success) {
+            setEmbeddingStatus('error');
+          } else {
+            setEmbeddingStatus('success');
+          }
+        })
+        .catch(() => setEmbeddingStatus('error'));
 
       // Revalidate frontend cache
       await revalidateArticle(data.slug);
@@ -852,6 +870,34 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       </FormItem>
                     )}
                   />
+
+                  {/* Embedding status */}
+                  {embeddingStatus !== 'idle' && (
+                    <>
+                      <Separator />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Indexation</span>
+                        {embeddingStatus === 'generating' && (
+                          <Badge variant="secondary" className="gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Indexation...
+                          </Badge>
+                        )}
+                        {embeddingStatus === 'success' && (
+                          <Badge variant="default" className="gap-1">
+                            <Check className="h-3 w-3" />
+                            Indexé
+                          </Badge>
+                        )}
+                        {embeddingStatus === 'error' && (
+                          <Badge variant="destructive" className="gap-1">
+                            <X className="h-3 w-3" />
+                            Erreur d&apos;indexation
+                          </Badge>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>

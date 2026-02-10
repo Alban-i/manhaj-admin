@@ -180,8 +180,11 @@ export default function Editor({
     ],
     content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
-    onCreate: () => {
+    onCreate: ({ editor }) => {
       isInitializedRef.current = true;
+      // Sync initial JSON to parent so contentJson is populated
+      // even when the user doesn't edit anything
+      onChange?.(editor.getHTML(), editor.getJSON());
     },
     onUpdate: ({ editor }) => {
       const newContent = editor.getHTML();
