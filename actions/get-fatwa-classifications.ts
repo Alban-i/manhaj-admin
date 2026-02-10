@@ -13,6 +13,7 @@ export default async function getFatwaClassifications(): Promise<
         *,
         fatwa_classification_translations(*)
       `)
+      .order('parent_id', { ascending: true, nullsFirst: true })
       .order('display_order');
 
     if (error) {

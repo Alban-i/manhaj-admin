@@ -22,8 +22,13 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { localeFlags } from '@/i18n/config';
 import { useTranslations } from 'next-intl';
-import { PlusCircle } from 'lucide-react';
-import { useState } from 'react';
+import {
+  PlusCircle,
+  ChevronRight,
+  ChevronDown,
+  GripVertical,
+} from 'lucide-react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { createClient } from '@/providers/supabase/client';
@@ -42,6 +47,22 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { reorderFatwaClassifications } from '@/actions/reorder-fatwa-classifications';
 
 interface FatwaClassificationsClientProps {
   classifications: FatwaClassificationWithTranslations[];
@@ -57,19 +78,130 @@ const FatwaClassificationsClient: React.FC<FatwaClassificationsClientProps> = ({
   const router = useRouter();
   const t = useTranslations('fatwaClassifications');
   const supabase = createClient();
+
+  const [localClassifications, setLocalClassifications] =
+    useState(classifications);
+
+  useEffect(() => {
+    setLocalClassifications(classifications);
+  }, [classifications]);
+
+  const { topLevel, childrenMap } = useMemo(() => {
+    const top: FatwaClassificationWithTranslations[] = [];
+    const children = new Map<number, FatwaClassificationWithTranslations[]>();
+    for (const c of localClassifications) {
+      if (c.parent_id === null) {
+        top.push(c);
+      } else {
+        const existing = children.get(c.parent_id) ?? [];
+        existing.push(c);
+        children.set(c.parent_id, existing);
+      }
+    }
+    top.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+    for (const [, arr] of children) {
+      arr.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+    }
+    return { topLevel: top, childrenMap: children };
+  }, [localClassifications]);
+
+  const [expandedBooks, setExpandedBooks] = useState<Set<number>>(() => {
+    return new Set(classifications.filter((c) => c.parent_id === null).map((b) => b.id));
+  });
+
+  const toggleBook = (id: number) => {
+    setExpandedBooks((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeGroup = active.data.current?.group as string | undefined;
+    const overGroup = over.data.current?.group as string | undefined;
+    if (!activeGroup || activeGroup !== overGroup) return;
+
+    if (activeGroup === 'books') {
+      const oldIndex = topLevel.findIndex((b) => b.id === active.id);
+      const newIndex = topLevel.findIndex((b) => b.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+      const reordered = arrayMove(topLevel, oldIndex, newIndex);
+
+      setLocalClassifications((prev) => {
+        const next = [...prev];
+        for (let i = 0; i < reordered.length; i++) {
+          const idx = next.findIndex((c) => c.id === reordered[i].id);
+          if (idx !== -1) next[idx] = { ...next[idx], display_order: i };
+        }
+        return next;
+      });
+
+      const items = reordered.map((item, i) => ({
+        id: item.id,
+        display_order: i,
+      }));
+      const result = await reorderFatwaClassifications(items);
+      if (!result.success) {
+        toast.error(result.error ?? 'Failed to reorder');
+        setLocalClassifications(classifications);
+      }
+    } else {
+      const parentId = Number(activeGroup.replace('children-', ''));
+      const children = childrenMap.get(parentId) ?? [];
+      const oldIndex = children.findIndex((c) => c.id === active.id);
+      const newIndex = children.findIndex((c) => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+      const reordered = arrayMove(children, oldIndex, newIndex);
+
+      setLocalClassifications((prev) => {
+        const next = [...prev];
+        for (let i = 0; i < reordered.length; i++) {
+          const idx = next.findIndex((c) => c.id === reordered[i].id);
+          if (idx !== -1) next[idx] = { ...next[idx], display_order: i };
+        }
+        return next;
+      });
+
+      const items = reordered.map((item, i) => ({
+        id: item.id,
+        display_order: i,
+      }));
+      const result = await reorderFatwaClassifications(items);
+      if (!result.success) {
+        toast.error(result.error ?? 'Failed to reorder');
+        setLocalClassifications(classifications);
+      }
+    }
+  };
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newSlug, setNewSlug] = useState('');
   const [newDisplayOrder, setNewDisplayOrder] = useState(0);
-  const [newTranslations, setNewTranslations] = useState<Record<string, { name: string; description: string }>>({});
+  const [newTranslations, setNewTranslations] = useState<
+    Record<string, { name: string; description: string }>
+  >({});
 
-  const getLocalizedName = (classification: FatwaClassificationWithTranslations) => {
-    const translation = classification.fatwa_classification_translations.find(
-      (tr) => tr.language === currentLocale
-    );
-    const arabicTranslation = classification.fatwa_classification_translations.find(
-      (tr) => tr.language === 'ar'
-    );
+  const getLocalizedName = (
+    classification: FatwaClassificationWithTranslations
+  ) => {
+    const translation =
+      classification.fatwa_classification_translations.find(
+        (tr) => tr.language === currentLocale
+      );
+    const arabicTranslation =
+      classification.fatwa_classification_translations.find(
+        (tr) => tr.language === 'ar'
+      );
     return translation?.name ?? arabicTranslation?.name ?? classification.slug;
   };
 
@@ -77,9 +209,10 @@ const FatwaClassificationsClient: React.FC<FatwaClassificationsClientProps> = ({
     classification: FatwaClassificationWithTranslations,
     langCode: string
   ) => {
-    const translation = classification.fatwa_classification_translations.find(
-      (tr) => tr.language === langCode
-    );
+    const translation =
+      classification.fatwa_classification_translations.find(
+        (tr) => tr.language === langCode
+      );
     return translation && translation.name && translation.name.trim() !== '';
   };
 
@@ -92,7 +225,6 @@ const FatwaClassificationsClient: React.FC<FatwaClassificationsClientProps> = ({
     try {
       setLoading(true);
 
-      // Create classification
       const { data: newClassification, error: clsError } = await supabase
         .from('fatwa_classifications')
         .insert({
@@ -107,9 +239,9 @@ const FatwaClassificationsClient: React.FC<FatwaClassificationsClientProps> = ({
         return;
       }
 
-      // Insert translations
-      const translationEntries = Object.entries(newTranslations)
-        .filter(([_, data]) => data.name.trim() !== '');
+      const translationEntries = Object.entries(newTranslations).filter(
+        ([, data]) => data.name.trim() !== ''
+      );
 
       if (translationEntries.length > 0) {
         const translationData = translationEntries.map(([language, data]) => ({
@@ -135,12 +267,14 @@ const FatwaClassificationsClient: React.FC<FatwaClassificationsClientProps> = ({
       setNewDisplayOrder(0);
       setNewTranslations({});
       router.refresh();
-    } catch (error) {
+    } catch {
       toast.error(t('somethingWentWrong'));
     } finally {
       setLoading(false);
     }
   };
+
+  const bookIds = topLevel.map((b) => b.id);
 
   return (
     <div className="grid gap-3 px-4">
@@ -179,8 +313,13 @@ const FatwaClassificationsClient: React.FC<FatwaClassificationsClientProps> = ({
                   />
                 </div>
                 {languages.map((lang) => (
-                  <div key={lang.code} className="space-y-2 p-3 border rounded-md">
-                    <span className="text-sm font-medium">{lang.native_name}</span>
+                  <div
+                    key={lang.code}
+                    className="space-y-2 p-3 border rounded-md"
+                  >
+                    <span className="text-sm font-medium">
+                      {lang.native_name}
+                    </span>
                     <div className="space-y-2">
                       <Label>{t('name')}</Label>
                       <Input
@@ -193,7 +332,8 @@ const FatwaClassificationsClient: React.FC<FatwaClassificationsClientProps> = ({
                             [lang.code]: {
                               ...prev[lang.code],
                               name: e.target.value,
-                              description: prev[lang.code]?.description ?? '',
+                              description:
+                                prev[lang.code]?.description ?? '',
                             },
                           }))
                         }
@@ -220,7 +360,11 @@ const FatwaClassificationsClient: React.FC<FatwaClassificationsClientProps> = ({
                     </div>
                   </div>
                 ))}
-                <Button onClick={handleCreate} disabled={loading} className="w-full">
+                <Button
+                  onClick={handleCreate}
+                  disabled={loading}
+                  className="w-full"
+                >
                   {loading ? '...' : t('create')}
                 </Button>
               </div>
@@ -235,81 +379,315 @@ const FatwaClassificationsClient: React.FC<FatwaClassificationsClientProps> = ({
           <CardDescription>{t('listDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('slug')}</TableHead>
-                <TableHead>{t('name')}</TableHead>
-                <TableHead>{t('displayOrder')}</TableHead>
-                <TableHead>{t('translations')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {classifications.map((classification) => (
-                <TableRow
-                  key={classification.id}
-                  className={cn('cursor-pointer hover:bg-secondary/50')}
-                  onClick={() =>
-                    router.push(`/fatwa-classifications/${classification.id}`)
-                  }
-                >
-                  <TableCell className="font-mono text-sm">
-                    {classification.slug}
-                  </TableCell>
-                  <TableCell className="font-bold">
-                    {getLocalizedName(classification)}
-                  </TableCell>
-                  <TableCell>
-                    {classification.display_order ?? 0}
-                  </TableCell>
-                  <TableCell>
-                    <TooltipProvider>
-                      <div className="flex gap-1">
-                        {languages.map((lang) => (
-                          <Tooltip key={lang.code}>
-                            <TooltipTrigger asChild>
-                              <Badge
-                                variant={
-                                  hasTranslation(classification, lang.code)
-                                    ? 'default'
-                                    : 'outline'
-                                }
-                                className={cn(
-                                  'text-xs cursor-default',
-                                  !hasTranslation(classification, lang.code) &&
-                                    'opacity-40'
-                                )}
-                              >
-                                {localeFlags[lang.code] ?? lang.code}
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {hasTranslation(classification, lang.code)
-                                ? classification.fatwa_classification_translations.find(
-                                    (tr) => tr.language === lang.code
-                                  )?.name
-                                : t('noTranslation')}
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                      </div>
-                    </TooltipProvider>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {classifications.length === 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    No classifications found.
-                  </TableCell>
+                  <TableHead className="w-10" />
+                  <TableHead>{t('name')}</TableHead>
+                  <TableHead>{t('slug')}</TableHead>
+                  <TableHead>{t('displayOrder')}</TableHead>
+                  <TableHead>{t('translations')}</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {topLevel.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No classifications found.
+                    </TableCell>
+                  </TableRow>
+                )}
+                <SortableContext
+                  items={bookIds}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {topLevel.map((book) => {
+                    const children = childrenMap.get(book.id) ?? [];
+                    const isExpanded = expandedBooks.has(book.id);
+                    const childIds = children.map((c) => c.id);
+                    return (
+                      <Fragment key={book.id}>
+                        <SortableBookRow
+                          book={book}
+                          childCount={children.length}
+                          isExpanded={isExpanded}
+                          onToggle={() => toggleBook(book.id)}
+                          onNavigate={() =>
+                            router.push(`/fatwa-classifications/${book.id}`)
+                          }
+                          getLocalizedName={getLocalizedName}
+                          languages={languages}
+                          hasTranslation={hasTranslation}
+                          t={t}
+                        />
+                        {isExpanded && children.length > 0 && (
+                          <SortableContext
+                            items={childIds}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {children.map((child) => (
+                              <SortableChildRow
+                                key={child.id}
+                                child={child}
+                                parentId={book.id}
+                                onNavigate={() =>
+                                  router.push(
+                                    `/fatwa-classifications/${child.id}`
+                                  )
+                                }
+                                getLocalizedName={getLocalizedName}
+                                languages={languages}
+                                hasTranslation={hasTranslation}
+                                t={t}
+                              />
+                            ))}
+                          </SortableContext>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </SortableContext>
+              </TableBody>
+            </Table>
+          </DndContext>
         </CardContent>
       </Card>
     </div>
   );
 };
+
+function SortableBookRow({
+  book,
+  childCount,
+  isExpanded,
+  onToggle,
+  onNavigate,
+  getLocalizedName,
+  languages,
+  hasTranslation,
+  t,
+}: {
+  book: FatwaClassificationWithTranslations;
+  childCount: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onNavigate: () => void;
+  getLocalizedName: (c: FatwaClassificationWithTranslations) => string;
+  languages: Language[];
+  hasTranslation: (
+    c: FatwaClassificationWithTranslations,
+    lang: string
+  ) => boolean | '' | undefined;
+  t: (key: string) => string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: book.id,
+    data: { group: 'books' },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className="bg-muted/40 hover:bg-muted/60"
+    >
+      <TableCell className="w-10 px-2">
+        <button
+          ref={setActivatorNodeRef}
+          {...listeners}
+          className="cursor-grab touch-none rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      </TableCell>
+      <TableCell className="font-bold">
+        <div className="flex items-center gap-2">
+          {childCount > 0 ? (
+            <button
+              className="p-0.5 rounded hover:bg-muted"
+              onClick={onToggle}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </button>
+          ) : (
+            <span className="w-5" />
+          )}
+          <span
+            className="cursor-pointer hover:underline"
+            onClick={onNavigate}
+          >
+            {getLocalizedName(book)}
+          </span>
+          {childCount > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {childCount}
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+      <TableCell className="font-mono text-sm">{book.slug}</TableCell>
+      <TableCell>{book.display_order ?? 0}</TableCell>
+      <TableCell>
+        <TranslationBadges
+          classification={book}
+          languages={languages}
+          hasTranslation={hasTranslation}
+          t={t}
+        />
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function SortableChildRow({
+  child,
+  parentId,
+  onNavigate,
+  getLocalizedName,
+  languages,
+  hasTranslation,
+  t,
+}: {
+  child: FatwaClassificationWithTranslations;
+  parentId: number;
+  onNavigate: () => void;
+  getLocalizedName: (c: FatwaClassificationWithTranslations) => string;
+  languages: Language[];
+  hasTranslation: (
+    c: FatwaClassificationWithTranslations,
+    lang: string
+  ) => boolean | '' | undefined;
+  t: (key: string) => string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: child.id,
+    data: { group: `children-${parentId}` },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className="hover:bg-secondary/50"
+    >
+      <TableCell className="w-10 px-2">
+        <button
+          ref={setActivatorNodeRef}
+          {...listeners}
+          className="cursor-grab touch-none rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      </TableCell>
+      <TableCell>
+        <div className="pl-8">
+          <span
+            className="cursor-pointer hover:underline"
+            onClick={onNavigate}
+          >
+            {getLocalizedName(child)}
+          </span>
+        </div>
+      </TableCell>
+      <TableCell className="font-mono text-sm">{child.slug}</TableCell>
+      <TableCell>{child.display_order ?? 0}</TableCell>
+      <TableCell>
+        <TranslationBadges
+          classification={child}
+          languages={languages}
+          hasTranslation={hasTranslation}
+          t={t}
+        />
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function TranslationBadges({
+  classification,
+  languages,
+  hasTranslation,
+  t,
+}: {
+  classification: FatwaClassificationWithTranslations;
+  languages: Language[];
+  hasTranslation: (
+    c: FatwaClassificationWithTranslations,
+    lang: string
+  ) => boolean | '' | undefined;
+  t: (key: string) => string;
+}) {
+  return (
+    <TooltipProvider>
+      <div className="flex gap-1">
+        {languages.map((lang) => (
+          <Tooltip key={lang.code}>
+            <TooltipTrigger asChild>
+              <Badge
+                variant={
+                  hasTranslation(classification, lang.code)
+                    ? 'default'
+                    : 'outline'
+                }
+                className={cn(
+                  'text-xs cursor-default',
+                  !hasTranslation(classification, lang.code) && 'opacity-40'
+                )}
+              >
+                {localeFlags[lang.code] ?? lang.code}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              {hasTranslation(classification, lang.code)
+                ? classification.fatwa_classification_translations.find(
+                    (tr) => tr.language === lang.code
+                  )?.name
+                : t('noTranslation')}
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
+  );
+}
 
 export default FatwaClassificationsClient;
