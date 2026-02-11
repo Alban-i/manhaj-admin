@@ -64,14 +64,8 @@ import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
 import { Wand2, Globe, Plus, Star, Link2, Calendar as CalendarIcon, FileEdit, Archive, Settings, Check, ChevronsUpDown, Loader2, X } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
-import DatePicker, { DateObject } from 'react-multi-date-picker';
-import arabic from 'react-date-object/calendars/arabic';
-import arabic_ar from 'react-date-object/locales/arabic_ar';
-import gregorian from 'react-date-object/calendars/gregorian';
-import gregorian_en from 'react-date-object/locales/gregorian_en';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { createHijriDateObject, dateObjectToTimestamp } from '@/lib/hijri-utils';
+import { HijriGregorianDateFields } from '@/components/hijri-gregorian-date-fields';
 import { UsedMediaCard } from '@/components/media/used-media-card';
 import { revalidateArticle, revalidateArticles } from '@/actions/revalidate';
 import { Badge } from '@/components/ui/badge';
@@ -594,85 +588,8 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                     {t('eventDateDescription')}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-x-2 gap-y-4">
-                  {/* Hijri Date Picker */}
-                  <FormField
-                    control={form.control}
-                    name="event_date_hijri"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('hijriDate')}</FormLabel>
-                        <FormControl>
-                          <DatePicker
-                            calendar={arabic}
-                            locale={arabic_ar}
-                            value={createHijriDateObject(field.value)}
-                            onChange={(date: DateObject | null) => {
-                              if (date) {
-                                // Store as Unix timestamp (ms) for reliable parsing
-                                field.onChange(dateObjectToTimestamp(date));
-                                // Also set the hijri year for sorting
-                                form.setValue('event_date_hijri_year', date.year);
-
-                                // Convert to Gregorian and sync
-                                const gregorianDate = new DateObject(date).convert(gregorian, gregorian_en);
-                                form.setValue('event_date_gregorian', gregorianDate.format('YYYY-MM-DD'));
-                              } else {
-                                field.onChange('');
-                                form.setValue('event_date_hijri_year', undefined);
-                                form.setValue('event_date_gregorian', '');
-                              }
-                            }}
-                            format="D MMMM YYYY"
-                            placeholder={t('selectHijriDate')}
-                            containerClassName="w-full"
-                            inputClass="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t('hijriDateDescription')}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Gregorian Date Picker */}
-                  <FormField
-                    control={form.control}
-                    name="event_date_gregorian"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('gregorianDate')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            value={field.value || ''}
-                            onChange={(e) => {
-                              const selectedDate = e.target.value ? new Date(e.target.value) : null;
-                              if (selectedDate) {
-                                // Format as YYYY-MM-DD for database
-                                field.onChange(format(selectedDate, 'yyyy-MM-dd'));
-
-                                // Convert to Hijri and sync (store as timestamp)
-                                const hijriDate = new DateObject(selectedDate).convert(arabic, arabic_ar);
-                                form.setValue('event_date_hijri', dateObjectToTimestamp(hijriDate));
-                                form.setValue('event_date_hijri_year', hijriDate.year);
-                              } else {
-                                field.onChange('');
-                                form.setValue('event_date_hijri', '');
-                                form.setValue('event_date_hijri_year', undefined);
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t('gregorianDateDescription')}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <CardContent>
+                  <HijriGregorianDateFields form={form} />
                 </CardContent>
               </Card>
 

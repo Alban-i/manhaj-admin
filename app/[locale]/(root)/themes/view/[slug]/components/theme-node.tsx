@@ -1,11 +1,11 @@
 'use client';
 
-import { TimelineEvent } from '@/types/timeline';
+import { ThemeEvent } from '@/types/theme';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 
-interface TimelineNodeProps {
-  event: TimelineEvent;
+interface ThemeNodeProps {
+  event: ThemeEvent;
   isSelected: boolean;
   isFirst: boolean;
   isLast: boolean;
@@ -14,7 +14,7 @@ interface TimelineNodeProps {
   onClick: () => void;
 }
 
-const TimelineNode: React.FC<TimelineNodeProps> = ({
+const ThemeNode: React.FC<ThemeNodeProps> = ({
   event,
   isSelected,
   isFirst,
@@ -105,4 +105,4 @@ const TimelineNode: React.FC<TimelineNodeProps> = ({
   );
 };
 
-export default TimelineNode;
+export default ThemeNode;

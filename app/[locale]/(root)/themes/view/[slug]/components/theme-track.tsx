@@ -1,17 +1,17 @@
 'use client';
 
 import { useMemo } from 'react';
-import { TimelineEvent, TimelineEventNested, nestEvents } from '@/types/timeline';
+import { ThemeEvent, ThemeEventNested, nestEvents } from '@/types/theme';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import TimelineNode from './timeline-node';
+import ThemeNode from './theme-node';
 
-interface TimelineTrackProps {
-  events: TimelineEvent[];
-  selectedEvent: TimelineEvent | null;
-  onEventSelect: (event: TimelineEvent) => void;
+interface ThemeTrackProps {
+  events: ThemeEvent[];
+  selectedEvent: ThemeEvent | null;
+  onEventSelect: (event: ThemeEvent) => void;
 }
 
-const TimelineTrack: React.FC<TimelineTrackProps> = ({
+const ThemeTrack: React.FC<ThemeTrackProps> = ({
   events,
   selectedEvent,
   onEventSelect,
@@ -21,7 +21,7 @@ const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
   // Render a single event node with its children
   const renderEventWithChildren = (
-    event: TimelineEventNested,
+    event: ThemeEventNested,
     index: number,
     totalAtLevel: number,
     isChild: boolean = false
@@ -30,7 +30,7 @@ const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
     return (
       <div key={event.id} className="relative">
-        <TimelineNode
+        <ThemeNode
           event={event}
           isSelected={selectedEvent?.id === event.id}
           isFirst={index === 0 && !isChild}
@@ -49,7 +49,7 @@ const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
               {/* Child node - positioned after the horizontal branch */}
               <div className="ml-8">
-                <TimelineNode
+                <ThemeNode
                   event={child}
                   isSelected={selectedEvent?.id === child.id}
                   isFirst={childIndex === 0}
@@ -84,4 +84,4 @@ const TimelineTrack: React.FC<TimelineTrackProps> = ({
   );
 };
 
-export default TimelineTrack;
+export default ThemeTrack;

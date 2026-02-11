@@ -8,7 +8,7 @@ export type LanguageCode = 'ar' | 'en' | 'fr' | 'de' | 'es';
 export type TextDirection = 'ltr' | 'rtl';
 
 export type ArticleStatus = 'Draft' | 'Published' | 'System' | 'Archived';
-export type TimelineStatus = 'draft' | 'published' | 'archived';
+export type ThemeStatus = 'draft' | 'published' | 'archived';
 
 // Article translation (the actual article content in a specific language)
 export type ArticleTranslation = Database['public']['Tables']['article_translations']['Row'];
@@ -75,16 +75,24 @@ export type TypeWithTranslations = Type & {
   classification: ClassificationWithTranslations;
 };
 
-// Timeline translation (the timeline content in a specific language)
-export type TimelineTranslation = Database['public']['Tables']['timeline_translations']['Row'];
-// Timeline metadata (shared across translations)
-export type TimelineMetadata = Database['public']['Tables']['timelines']['Row'];
+// Theme translation (the theme content in a specific language)
+export type ThemeTranslation = Database['public']['Tables']['theme_translations']['Row'];
+// Theme metadata (shared across translations)
+export type ThemeMetadata = Database['public']['Tables']['themes']['Row'];
 // Legacy alias for compatibility
-export type Timeline = TimelineTranslation;
+export type Theme = ThemeTranslation;
 
-export type TimelineArticle = Database['public']['Tables']['timeline_articles']['Row'];
+export type ThemeArticle = Database['public']['Tables']['theme_articles']['Row'];
 
 export type EventDatePrecision = 'day' | 'month' | 'year' | 'decade' | 'century';
+
+// Timeline types (new lightweight timelines)
+export type TimelineStatus = 'draft' | 'published' | 'archived';
+export type TimelineMetadata = Database['public']['Tables']['timelines']['Row'];
+export type TimelineTranslation = Database['public']['Tables']['timeline_translations']['Row'];
+export type Timeline = TimelineTranslation;
+export type TimelineEventRow = Database['public']['Tables']['timeline_events']['Row'];
+export type TimelineEventTranslationRow = Database['public']['Tables']['timeline_event_translations']['Row'];
 
 export type ImagePreset = Database['public']['Tables']['image_presets']['Row'];
 export type ImageProject = Database['public']['Tables']['image_projects']['Row'];

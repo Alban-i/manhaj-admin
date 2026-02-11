@@ -1,6 +1,6 @@
 import { createClient } from '@/providers/supabase/server';
 
-export interface ArticleForTimeline {
+export interface ArticleForTheme {
   id: string;
   title: string;
   slug: string;
@@ -13,7 +13,7 @@ export interface ArticleForTimeline {
   category_id: number | null;
 }
 
-const getArticlesForTimeline = async (): Promise<ArticleForTimeline[]> => {
+const getArticlesForTheme = async (): Promise<ArticleForTheme[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('article_translations')
@@ -38,4 +38,4 @@ const getArticlesForTimeline = async (): Promise<ArticleForTimeline[]> => {
   return data || [];
 };
 
-export default getArticlesForTimeline;
+export default getArticlesForTheme;

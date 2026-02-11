@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { getLanguageWithFlag } from '@/i18n/config';
 import { FileEdit, Globe, Archive } from 'lucide-react';
 
-export type TimelinesInDataTable = {
+export type ThemesInDataTable = {
   id: string;
   title: string;
   slug: string;
@@ -15,6 +15,7 @@ export type TimelinesInDataTable = {
   language: string;
 };
 
+// Language display names
 const languageNames: Record<string, string> = {
   ar: 'العربية',
   en: 'English',
@@ -23,11 +24,12 @@ const languageNames: Record<string, string> = {
   es: 'Español',
 };
 
+// Extend the ColumnDef type to include the label property
 export type ExtendedColumnDef<T> = ColumnDef<T> & {
   label?: string;
 };
 
-export const columns: ExtendedColumnDef<TimelinesInDataTable>[] = [
+export const columns: ExtendedColumnDef<ThemesInDataTable>[] = [
   {
     accessorKey: 'title',
     label: 'Title',

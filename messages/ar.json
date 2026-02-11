@@ -36,6 +36,7 @@
     "categories": "التصنيفات",
     "tags": "الوسوم",
     "glossaries": "المصطلحات",
+    "themes": "مواضيع",
     "timelines": "التسلسل الزمني",
     "peopleAndTypes": "الأشخاص والأنواع",
     "individuals": "الأفراد",
@@ -54,6 +55,7 @@
     "imageGenerator": "مولد الصور",
     "imageProjects": "المشاريع",
     "imagePresets": "القوالب",
+    "fatwaSection": "الفتاوى",
     "fatawa": "الفتاوى",
     "fatwaClassifications": "تصنيفات الفتاوى"
   },

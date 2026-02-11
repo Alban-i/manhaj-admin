@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { ArticleForTimeline } from '@/actions/get-articles-for-timeline';
-import { TimelineEvent, TimelineEventNested, nestEvents } from '@/types/timeline';
+import { ArticleForTheme } from '@/actions/get-articles-for-theme';
+import { ThemeEvent, ThemeEventNested, nestEvents } from '@/types/theme';
 import { ProfilesWithRoles } from '@/types/types';
 import {
-  addArticleToTimeline,
-  removeArticleFromTimeline,
-  updateTimelineArticleOrder,
+  addArticleToTheme,
+  removeArticleFromTheme,
+  updateThemeArticleOrder,
   setEventParent,
-} from '@/actions/upsert-timeline';
+} from '@/actions/upsert-theme';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -45,30 +45,30 @@ import { formatHijriForDisplay } from '@/lib/hijri-utils';
 import CreateArticleSheet from './create-article-sheet';
 
 interface ArticleSelectorProps {
-  timelineId: string;
-  timelineSlug: string;
-  timelineLanguage: string;
-  timelineCategoryId?: number;
-  timelineCategoryName?: string;
-  availableArticles: ArticleForTimeline[];
-  timelineEvents: TimelineEvent[];
+  themeId: string;
+  themeSlug: string;
+  themeLanguage: string;
+  themeCategoryId?: number;
+  themeCategoryName?: string;
+  availableArticles: ArticleForTheme[];
+  themeEvents: ThemeEvent[];
   authors: ProfilesWithRoles[];
 }
 
 const ArticleSelector: React.FC<ArticleSelectorProps> = ({
-  timelineId,
-  timelineSlug,
-  timelineLanguage,
-  timelineCategoryId,
-  timelineCategoryName,
+  themeId,
+  themeSlug,
+  themeLanguage,
+  themeCategoryId,
+  themeCategoryName,
   availableArticles,
-  timelineEvents,
+  themeEvents,
   authors,
 }) => {
   const [open, setOpen] = useState(false);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [events, setEvents] = useState(timelineEvents);
+  const [events, setEvents] = useState(themeEvents);
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
   const router = useRouter();
 
@@ -77,7 +77,7 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
 
   // Flatten nested events for display (respecting collapsed state)
   const flattenedForDisplay = useMemo(() => {
-    const result: { event: TimelineEvent; isChild: boolean; parentId: string | null; flatIndex: number }[] = [];
+    const result: { event: ThemeEvent; isChild: boolean; parentId: string | null; flatIndex: number }[] = [];
     let flatIndex = 0;
 
     nestedEvents.forEach((parent) => {
@@ -106,34 +106,34 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
     });
   };
 
-  // Get article IDs already in the timeline
+  // Get article IDs already in the theme
   const selectedArticleIds = events.map((e) => e.article_id);
 
   // Filter available articles:
-  // 1. Not already in timeline
-  // 2. Same language as timeline
-  // 3. Same category as timeline (if timeline has a category)
+  // 1. Not already in theme
+  // 2. Same language as theme
+  // 3. Same category as theme (if theme has a category)
   const unselectedArticles = availableArticles.filter((article) => {
-    // Already in timeline
+    // Already in theme
     if (selectedArticleIds.includes(article.id)) return false;
 
-    // Must match timeline language
-    if (article.language !== timelineLanguage) return false;
+    // Must match theme language
+    if (article.language !== themeLanguage) return false;
 
-    // Must match timeline category (if timeline has a category set)
-    if (timelineCategoryId && article.category_id !== timelineCategoryId) return false;
+    // Must match theme category (if theme has a category set)
+    if (themeCategoryId && article.category_id !== themeCategoryId) return false;
 
     return true;
   });
 
-  const handleAddArticle = async (article: ArticleForTimeline) => {
+  const handleAddArticle = async (article: ArticleForTheme) => {
     setOpen(false);
 
     startTransition(async () => {
       const maxOrder = Math.max(0, ...events.map((e) => e.display_order ?? 0));
 
-      const result = await addArticleToTimeline({
-        timeline_id: timelineId,
+      const result = await addArticleToTheme({
+        theme_id: themeId,
         article_id: article.id,
         display_order: maxOrder + 1,
       });
@@ -143,14 +143,14 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
         return;
       }
 
-      toast.success('Article added to timeline');
+      toast.success('Article added to theme');
       router.refresh();
     });
   };
 
   const handleRemoveArticle = async (articleId: string) => {
     startTransition(async () => {
-      const result = await removeArticleFromTimeline(timelineId, articleId);
+      const result = await removeArticleFromTheme(themeId, articleId);
 
       if (!result.success) {
         toast.error(result.error || 'Failed to remove article');
@@ -158,12 +158,12 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
       }
 
       setEvents((prev) => prev.filter((e) => e.article_id !== articleId));
-      toast.success('Article removed from timeline');
+      toast.success('Article removed from theme');
     });
   };
 
   // Get the event above in the flat list (for indent operation)
-  const getEventAbove = (flatIndex: number): TimelineEvent | null => {
+  const getEventAbove = (flatIndex: number): ThemeEvent | null => {
     if (flatIndex <= 0) return null;
     return flattenedForDisplay[flatIndex - 1].event;
   };
@@ -267,7 +267,7 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
       });
 
       startTransition(async () => {
-        const result = await updateTimelineArticleOrder(updatedItems);
+        const result = await updateThemeArticleOrder(updatedItems);
         if (!result.success) {
           toast.error('Failed to reorder');
           router.refresh();
@@ -300,7 +300,7 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
       });
 
       startTransition(async () => {
-        const result = await updateTimelineArticleOrder(updatedItems);
+        const result = await updateThemeArticleOrder(updatedItems);
         if (!result.success) {
           toast.error('Failed to reorder');
           router.refresh();
@@ -343,7 +343,7 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
       });
 
       startTransition(async () => {
-        const result = await updateTimelineArticleOrder(updatedItems);
+        const result = await updateThemeArticleOrder(updatedItems);
         if (!result.success) {
           toast.error('Failed to reorder');
           router.refresh();
@@ -376,7 +376,7 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
       });
 
       startTransition(async () => {
-        const result = await updateTimelineArticleOrder(updatedItems);
+        const result = await updateThemeArticleOrder(updatedItems);
         if (!result.success) {
           toast.error('Failed to reorder');
           router.refresh();
@@ -413,7 +413,7 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
     }
   };
 
-  const formatEventDate = (event: TimelineEvent) => {
+  const formatEventDate = (event: ThemeEvent) => {
     const hijri =
       event.custom_event_date_hijri || event.article.event_date_hijri;
     const gregorian =
@@ -498,19 +498,19 @@ const ArticleSelector: React.FC<ArticleSelectorProps> = ({
       <CreateArticleSheet
         open={createSheetOpen}
         onOpenChange={setCreateSheetOpen}
-        timelineId={timelineId}
-        timelineSlug={timelineSlug}
-        timelineLanguage={timelineLanguage}
-        timelineCategoryId={timelineCategoryId}
-        timelineCategoryName={timelineCategoryName}
+        themeId={themeId}
+        themeSlug={themeSlug}
+        themeLanguage={themeLanguage}
+        themeCategoryId={themeCategoryId}
+        themeCategoryName={themeCategoryName}
         authors={authors}
       />
 
-      {/* Timeline Events List */}
+      {/* Theme Events List */}
       <div className="space-y-2">
         {events.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            No articles added to this timeline yet.
+            No articles added to this theme yet.
           </p>
         ) : (
           flattenedForDisplay.map(({ event, isChild, parentId, flatIndex }) => {

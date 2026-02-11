@@ -1,13 +1,13 @@
 'use client';
 
-import { TimelineEvent } from '@/types/timeline';
+import { ThemeEvent } from '@/types/theme';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 interface ArticlePaneProps {
-  event: TimelineEvent | null;
+  event: ThemeEvent | null;
   onPrevEvent?: () => void;
   onNextEvent?: () => void;
   currentIndex: number;

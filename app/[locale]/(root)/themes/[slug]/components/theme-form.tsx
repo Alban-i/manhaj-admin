@@ -4,8 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Timeline, Language } from '@/types/types';
-import { TimelineEvent } from '@/types/timeline';
+import { Theme, Language, ProfilesWithRoles } from '@/types/types';
+import { ArticleForTheme } from '@/actions/get-articles-for-theme';
+import { ThemeEvent } from '@/types/theme';
 
 import {
   Form,
@@ -14,7 +15,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 
 import {
@@ -38,13 +38,14 @@ import { Globe, Eye, Star, Plus, FileEdit, Archive } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { FormDescription } from '@/components/ui/form';
 import { getLanguageWithFlag } from '@/i18n/config';
-import { TimelineTranslationItem } from '@/actions/get-timeline-translations';
+import { ThemeTranslationItem } from '@/actions/get-theme-translations';
 import {
-  upsertTimeline,
-  deleteTimeline,
-} from '@/actions/upsert-timeline';
-import EventList from './event-list';
+  upsertTheme,
+  deleteTheme,
+} from '@/actions/upsert-theme';
+import ArticleSelector from './article-selector';
 import Link from 'next/link';
 import { createClient } from '@/providers/supabase/client';
 
@@ -54,36 +55,44 @@ const formSchema = z.object({
   description: z.string().optional(),
   image_url: z.string().optional(),
   language: z.string().min(1, 'Language is required'),
+  category_id: z.string().optional(),
   is_original: z.boolean(),
 });
 
-interface TimelineFormProps {
-  timeline: (Omit<Timeline, 'id'> & { id?: string; is_original?: boolean }) | null;
+interface ThemeFormProps {
+  theme: (Omit<Theme, 'id'> & { id?: string; is_original?: boolean }) | null;
   languages: Language[];
-  timelineEvents: TimelineEvent[];
-  translations: TimelineTranslationItem[];
+  availableArticles: ArticleForTheme[];
+  themeEvents: ThemeEvent[];
+  categories: { id: number; name: string }[];
+  authors: ProfilesWithRoles[];
+  translations: ThemeTranslationItem[];
 }
 
-const TimelineForm: React.FC<TimelineFormProps> = ({
-  timeline,
+const ThemeForm: React.FC<ThemeFormProps> = ({
+  theme,
   languages,
-  timelineEvents,
+  availableArticles,
+  themeEvents,
+  categories,
+  authors,
   translations,
 }) => {
   const defaultValues = {
-    id: timeline?.id,
-    title: timeline?.title ?? '',
-    slug: timeline?.slug ?? '',
-    description: timeline?.description ?? '',
-    image_url: timeline?.image_url ?? '',
-    language: timeline?.language ?? 'ar',
-    is_original: timeline?.is_original ?? true,
-    timeline_id: timeline?.timeline_id ?? null,
+    id: theme?.id,
+    title: theme?.title ?? '',
+    slug: theme?.slug ?? '',
+    description: theme?.description ?? '',
+    image_url: theme?.image_url ?? '',
+    language: theme?.language ?? 'ar',
+    category_id: theme?.category_id?.toString() ?? undefined,
+    is_original: theme?.is_original ?? true,
+    theme_id: theme?.theme_id ?? null,
   };
 
   type FormStatus = 'draft' | 'published' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
-    (timeline?.status?.toLowerCase() as FormStatus) ?? 'draft'
+    (theme?.status?.toLowerCase() as FormStatus) ?? 'draft'
   );
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
@@ -99,6 +108,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
       description: defaultValues.description,
       image_url: defaultValues.image_url,
       language: defaultValues.language,
+      category_id: defaultValues.category_id,
       is_original: defaultValues.is_original,
     },
   });
@@ -113,39 +123,49 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
     const targetLang = languages.find((l) => l.code === targetLanguage);
     if (!targetLang || !defaultValues.id) return;
 
+    // Generate slug with language suffix
     const baseSlug = defaultValues.slug ?? '';
     const newSlug = `${baseSlug}-${targetLanguage}`;
 
+    // Navigate to new theme page with translation params
     const params = new URLSearchParams({
       translate_from: defaultValues.id,
-      timeline_id: defaultValues.timeline_id ?? defaultValues.id,
+      theme_id: defaultValues.theme_id ?? defaultValues.id,
       language: targetLanguage,
       slug: newSlug,
     });
 
-    router.push(`/timelines/new?${params.toString()}`);
+    // Include category_id if it exists
+    if (defaultValues.category_id) {
+      params.set('category_id', defaultValues.category_id);
+    }
+
+    router.push(`/themes/new?${params.toString()}`);
   };
 
-  const toastMessage = timeline?.id
-    ? 'Timeline updated.'
-    : 'Timeline created.';
-  const action = timeline?.id ? 'Save changes' : 'Create';
+  // Labels
+  const toastMessage = theme?.id
+    ? 'Theme updated.'
+    : 'Theme created.';
+  const action = theme?.id ? 'Save changes' : 'Create';
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
 
-      let timelineMetadataId = defaultValues.timeline_id;
+      let themeMetadataId = defaultValues.theme_id;
 
+      // Shared data that goes to themes
       const sharedData = {
+        category_id: values.category_id ? Number(values.category_id) : null,
         image_url: values.image_url || null,
         updated_at: new Date().toISOString(),
       };
 
-      // For new timelines without timeline_id, create a new metadata record
-      if (!timelineMetadataId) {
+      // For new themes without theme_id, create a new metadata record
+      if (!themeMetadataId) {
         const { data: newGroup, error: groupError } = await supabase
-          .from('timelines')
+          .from('themes')
           .insert({
             ...sharedData,
             created_at: new Date().toISOString(),
@@ -154,52 +174,54 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
           .single();
 
         if (groupError) {
-          toast.error('Failed to create timeline group: ' + groupError.message);
+          toast.error('Failed to create translation group: ' + groupError.message);
           setLoading(false);
           return;
         }
 
-        timelineMetadataId = newGroup.id;
+        themeMetadataId = newGroup.id;
       } else {
+        // Update existing themes record with shared data
         const { error: updateGroupError } = await supabase
-          .from('timelines')
+          .from('themes')
           .update(sharedData)
-          .eq('id', timelineMetadataId);
+          .eq('id', themeMetadataId);
 
         if (updateGroupError) {
-          toast.error('Failed to update timeline group: ' + updateGroupError.message);
+          toast.error('Failed to update translation group: ' + updateGroupError.message);
           setLoading(false);
           return;
         }
       }
 
-      const result = await upsertTimeline({
-        id: timeline?.id,
+      const result = await upsertTheme({
+        id: theme?.id,
         slug: values.slug,
         title: values.title,
         description: values.description || null,
         image_url: values.image_url || null,
         status: status,
         language: values.language,
+        category_id: values.category_id ? Number(values.category_id) : null,
         is_original: values.is_original,
-        timeline_id: timelineMetadataId,
+        theme_id: themeMetadataId,
       });
 
       if (!result.success) {
-        toast.error(result.error || 'Failed to save timeline');
+        toast.error(result.error || 'Failed to save theme');
         setLoading(false);
         return;
       }
 
       toast.success(toastMessage);
 
-      if (!timeline?.id) {
-        router.push(`/timelines/${result.data?.slug}`);
+      if (!theme?.id) {
+        router.push(`/themes/${result.data?.slug}`);
         return;
       }
 
       router.refresh();
-    } catch {
+    } catch (err) {
       toast.error('Something went wrong');
     } finally {
       setLoading(false);
@@ -207,23 +229,23 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
   };
 
   const onDelete = async () => {
-    if (!timeline?.id) {
-      toast.error('Timeline not found');
+    if (!theme?.id) {
+      toast.error('Theme not found');
       return;
     }
 
     try {
-      const result = await deleteTimeline(timeline.id);
+      const result = await deleteTheme(theme.id);
 
       if (!result.success) {
-        toast.error(result.error || 'Failed to delete timeline');
+        toast.error(result.error || 'Failed to delete theme');
         return;
       }
 
-      toast.success('Timeline deleted.');
-      router.push('/timelines');
+      toast.success('Theme deleted.');
+      router.push('/themes');
       router.refresh();
-    } catch {
+    } catch (error) {
       toast.error('Something went wrong when trying to delete');
     }
   };
@@ -242,18 +264,18 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
               <Card>
                 <CardHeader className="grid grid-cols-[1fr_auto] items-center gap-4">
                   <CardTitle>
-                    {timeline?.id ? timeline.title : 'New timeline'}
+                    {theme?.id ? theme.title : 'New theme'}
                   </CardTitle>
                   <div className="flex gap-2">
-                    {timeline?.id && (
+                    {theme?.id && (
                       <>
-                        <Link href={`/timelines/view/${timeline.slug}`}>
+                        <Link href={`/themes/view/${theme.slug}`}>
                           <Button type="button" variant="outline" className="gap-1">
                             <Eye className="h-4 w-4" />
                             View
                           </Button>
                         </Link>
-                        <DeleteButton label="Delete Timeline" fn={onDelete} />
+                        <DeleteButton label="Delete Theme" fn={onDelete} />
                       </>
                     )}
                     <Button type="submit">{action}</Button>
@@ -264,7 +286,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
               {/* DETAILS */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Timeline Details</CardTitle>
+                  <CardTitle>Theme Details</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-x-2 gap-y-4">
                   <FormField
@@ -276,7 +298,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                           Title
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="Timeline Title" {...field} />
+                          <Input placeholder="Theme Title" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -292,7 +314,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                           Slug
                         </FormLabel>
                         <FormControl>
-                          <Input placeholder="timeline-slug" {...field} />
+                          <Input placeholder="theme-slug" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -332,6 +354,37 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="category_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl className="w-full">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem
+                                key={category.id}
+                                value={category.id.toString()}
+                              >
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <div>
                     <FormLabel className="mb-2">Status</FormLabel>
                     <TabToggle
@@ -354,7 +407,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                           <FormLabel>Description</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="Timeline description..."
+                              placeholder="Theme description..."
                               className="min-h-[100px]"
                               {...field}
                             />
@@ -409,7 +462,9 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                 </CardHeader>
                 <CardContent>
                   <div className="grid @xl:grid-cols-[1fr_auto] gap-4 items-start">
+                    {/* Left column - Translations */}
                     <div className="space-y-4">
+                      {/* Existing translations */}
                       {translations.length > 0 && (
                         <div className="space-y-2">
                           <span className="text-sm text-muted-foreground">Available translations:</span>
@@ -433,7 +488,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                                   {displayName}
                                 </Badge>
                               ) : (
-                                <Link key={translation.id} href={`/timelines/${translation.slug}`}>
+                                <Link key={translation.id} href={`/themes/${translation.slug}`}>
                                   <Badge
                                     variant="outline"
                                     className="text-xs gap-1 cursor-pointer hover:bg-background py-1.5 px-3"
@@ -448,6 +503,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                         </div>
                       )}
 
+                      {/* Create new translation */}
                       {availableLanguagesForTranslation.length > 0 && (
                         <div className="space-y-2">
                           <span className="text-sm text-muted-foreground">Add translation:</span>
@@ -477,6 +533,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                         )}
                     </div>
 
+                    {/* Right column - Mark as original */}
                     <div className="space-y-2">
                       <span className="text-sm text-muted-foreground">Original status:</span>
                       <FormField
@@ -493,7 +550,7 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
                             <div className="space-y-1 leading-none">
                               <FormLabel>Mark as original</FormLabel>
                               <FormDescription>
-                                Source timeline for translations
+                                Source theme for translations
                               </FormDescription>
                             </div>
                           </FormItem>
@@ -505,20 +562,29 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
               </Card>
             )}
 
-            {/* TIMELINE EVENTS - Full Width */}
-            {timeline?.id && (
+            {/* THEME EVENTS - Full Width */}
+            {theme?.id && (
               <Card className="md:col-span-2">
                 <CardHeader>
-                  <CardTitle>Timeline Events</CardTitle>
+                  <CardTitle>Theme Events</CardTitle>
                   <CardDescription>
-                    Add chronological events to this timeline
+                    Add and arrange articles in this theme
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <EventList
-                    timelineId={timeline.timeline_id ?? timeline.id}
-                    language={form.watch('language')}
-                    events={timelineEvents}
+                  <ArticleSelector
+                    themeId={theme.id}
+                    themeSlug={theme.slug}
+                    themeLanguage={form.watch('language')}
+                    themeCategoryId={form.watch('category_id') ? Number(form.watch('category_id')) : undefined}
+                    themeCategoryName={
+                      form.watch('category_id')
+                        ? categories.find((c) => c.id.toString() === form.watch('category_id'))?.name
+                        : undefined
+                    }
+                    availableArticles={availableArticles}
+                    themeEvents={themeEvents}
+                    authors={authors}
                   />
                 </CardContent>
               </Card>
@@ -530,4 +596,4 @@ const TimelineForm: React.FC<TimelineFormProps> = ({
   );
 };
 
-export default TimelineForm;
+export default ThemeForm;

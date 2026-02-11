@@ -20,6 +20,7 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
 
+  // Convert languages to filter options
   const languageOptions = languages.map((lang) => ({
     label: lang.native_name,
     value: lang.code,

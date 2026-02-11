@@ -14,7 +14,7 @@ import gregorian_en from 'react-date-object/locales/gregorian_en';
 import { format } from 'date-fns';
 
 import { ProfilesWithRoles } from '@/types/types';
-import { createArticleForTimeline } from '@/actions/create-article-for-timeline';
+import { createArticleForTheme } from '@/actions/create-article-for-theme';
 import { createHijriDateObject, dateObjectToTimestamp } from '@/lib/hijri-utils';
 
 import {
@@ -62,11 +62,11 @@ type FormData = z.infer<typeof formSchema>;
 interface CreateArticleSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  timelineId: string;
-  timelineSlug: string;
-  timelineLanguage: string;
-  timelineCategoryId?: number | null;
-  timelineCategoryName?: string | null;
+  themeId: string;
+  themeSlug: string;
+  themeLanguage: string;
+  themeCategoryId?: number | null;
+  themeCategoryName?: string | null;
   authors: ProfilesWithRoles[];
 }
 
@@ -84,11 +84,11 @@ function generateSlug(title: string): string {
 const CreateArticleSheet: React.FC<CreateArticleSheetProps> = ({
   open,
   onOpenChange,
-  timelineId,
-  timelineSlug,
-  timelineLanguage,
-  timelineCategoryId,
-  timelineCategoryName,
+  themeId,
+  themeSlug,
+  themeLanguage,
+  themeCategoryId,
+  themeCategoryName,
   authors,
 }) => {
   const router = useRouter();
@@ -120,18 +120,18 @@ const CreateArticleSheet: React.FC<CreateArticleSheetProps> = ({
 
   const onSubmit = async (values: FormData) => {
     startTransition(async () => {
-      const result = await createArticleForTimeline({
-        timeline_id: timelineId,
-        timeline_slug: timelineSlug,
+      const result = await createArticleForTheme({
+        theme_id: themeId,
+        theme_slug: themeSlug,
         title: values.title,
         slug: values.slug,
         summary: values.summary,
         author_id: values.author_id,
-        category_id: timelineCategoryId,
+        category_id: themeCategoryId,
         event_date_hijri: values.event_date_hijri || null,
         event_date_hijri_year: values.event_date_hijri_year || null,
         event_date_gregorian: values.event_date_gregorian || null,
-        language: timelineLanguage,
+        language: themeLanguage,
       });
 
       if (!result.success) {
@@ -139,7 +139,7 @@ const CreateArticleSheet: React.FC<CreateArticleSheetProps> = ({
         return;
       }
 
-      toast.success('Article created and added to timeline');
+      toast.success('Article created and added to theme');
       form.reset();
       onOpenChange(false);
       router.refresh();
@@ -159,21 +159,21 @@ const CreateArticleSheet: React.FC<CreateArticleSheetProps> = ({
         <SheetHeader>
           <SheetTitle>Create New Article</SheetTitle>
           <SheetDescription>
-            Create a new article for this timeline. The article will be added to the end of the timeline.
+            Create a new article for this theme. The article will be added to the end of the theme.
           </SheetDescription>
         </SheetHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4">
             {/* Category Badge (read-only) */}
-            {timelineCategoryName && (
+            {themeCategoryName && (
               <div className="space-y-2">
                 <FormLabel>Category</FormLabel>
                 <div>
-                  <Badge variant="secondary">{timelineCategoryName}</Badge>
+                  <Badge variant="secondary">{themeCategoryName}</Badge>
                 </div>
                 <FormDescription>
-                  Inherited from timeline
+                  Inherited from theme
                 </FormDescription>
               </div>
             )}

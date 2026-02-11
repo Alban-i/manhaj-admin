@@ -28,6 +28,7 @@ import {
   Settings,
   Scale,
   FolderTree,
+  Clock,
 } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 
@@ -104,19 +105,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           url: '/glossaries',
         },
         {
-          title: t('timelines'),
+          title: t('themes'),
           icon: History,
+          url: '/themes',
+        },
+        {
+          title: t('timelines'),
+          icon: Clock,
           url: '/timelines',
-        },
-        {
-          title: t('fatawa'),
-          icon: Scale,
-          url: '/fatawa',
-        },
-        {
-          title: t('fatwaClassifications'),
-          icon: FolderTree,
-          url: '/fatwa-classifications',
         },
       ],
     },
@@ -140,6 +136,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: t('classifications'),
           icon: Tag,
           url: '/classifications',
+        },
+      ],
+    },
+    {
+      title: t('fatwaSection'),
+      url: '#',
+      icon: Scale,
+      isActive: true,
+      items: [
+        {
+          title: t('fatawa'),
+          icon: Scale,
+          url: '/fatawa',
+        },
+        {
+          title: t('fatwaClassifications'),
+          icon: FolderTree,
+          url: '/fatwa-classifications',
         },
       ],
     },

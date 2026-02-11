@@ -1,6 +1,6 @@
 import { createClient } from '@/providers/supabase/server';
 
-export interface TimelineTranslationItem {
+export interface ThemeTranslationItem {
   id: string;
   title: string;
   slug: string;
@@ -9,10 +9,10 @@ export interface TimelineTranslationItem {
   status: string;
 }
 
-export default async function getTimelineTranslations(
-  timelineId: string | null
-): Promise<TimelineTranslationItem[]> {
-  if (!timelineId) {
+export default async function getThemeTranslations(
+  themeId: string | null
+): Promise<ThemeTranslationItem[]> {
+  if (!themeId) {
     return [];
   }
 
@@ -20,13 +20,13 @@ export default async function getTimelineTranslations(
 
   try {
     const { data, error } = await supabase
-      .from('timeline_translations')
+      .from('theme_translations')
       .select('id, title, slug, language, is_original, status')
-      .eq('timeline_id', timelineId)
+      .eq('theme_id', themeId)
       .order('is_original', { ascending: false });
 
     if (error) {
-      console.error('Error fetching timeline translations:', error);
+      console.error('Error fetching theme translations:', error);
       return [];
     }
 

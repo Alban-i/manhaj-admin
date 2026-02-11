@@ -36,6 +36,7 @@
     "categories": "Catégories",
     "tags": "Tags",
     "glossaries": "Glossaires",
+    "themes": "Thèmes",
     "timelines": "Chronologies",
     "peopleAndTypes": "Personnes & Types",
     "individuals": "Individus",
@@ -54,6 +55,7 @@
     "imageGenerator": "Générateur d'images",
     "imageProjects": "Projets",
     "imagePresets": "Préréglages",
+    "fatwaSection": "Fatawa",
     "fatawa": "Fatawa",
     "fatwaClassifications": "Classifications Fatawa"
   },

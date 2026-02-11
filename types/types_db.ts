@@ -1667,7 +1667,7 @@ export type Database = {
           },
         ]
       }
-      timeline_articles: {
+      theme_articles: {
         Row: {
           article_id: string
           created_at: string | null
@@ -1677,7 +1677,7 @@ export type Database = {
           display_order: number | null
           id: string
           parent_id: string | null
-          timeline_id: string
+          theme_id: string
         }
         Insert: {
           article_id: string
@@ -1688,7 +1688,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           parent_id?: string | null
-          timeline_id: string
+          theme_id: string
         }
         Update: {
           article_id?: string
@@ -1699,7 +1699,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           parent_id?: string | null
-          timeline_id?: string
+          theme_id?: string
         }
         Relationships: [
           {
@@ -1713,19 +1713,19 @@ export type Database = {
             foreignKeyName: "timeline_articles_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
-            referencedRelation: "timeline_articles"
+            referencedRelation: "theme_articles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "timeline_articles_timeline_id_fkey"
-            columns: ["timeline_id"]
+            columns: ["theme_id"]
             isOneToOne: false
-            referencedRelation: "timeline_translations"
+            referencedRelation: "theme_translations"
             referencedColumns: ["id"]
           },
         ]
       }
-      timeline_translations: {
+      theme_translations: {
         Row: {
           category_id: number | null
           created_at: string | null
@@ -1736,7 +1736,7 @@ export type Database = {
           language: string | null
           slug: string
           status: string | null
-          timeline_id: string | null
+          theme_id: string | null
           title: string
           updated_at: string | null
         }
@@ -1750,7 +1750,7 @@ export type Database = {
           language?: string | null
           slug: string
           status?: string | null
-          timeline_id?: string | null
+          theme_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -1764,7 +1764,7 @@ export type Database = {
           language?: string | null
           slug?: string
           status?: string | null
-          timeline_id?: string | null
+          theme_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -1785,14 +1785,14 @@ export type Database = {
           },
           {
             foreignKeyName: "timeline_translations_timeline_id_fkey"
-            columns: ["timeline_id"]
+            columns: ["theme_id"]
             isOneToOne: false
-            referencedRelation: "timelines"
+            referencedRelation: "themes"
             referencedColumns: ["id"]
           },
         ]
       }
-      timelines: {
+      themes: {
         Row: {
           author_id: string | null
           category_id: number | null
@@ -1830,6 +1830,206 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_event_translations: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_id: string
+          id: string
+          is_original: boolean
+          language: string
+          source: string | null
+          source_url: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_id: string
+          id?: string
+          is_original?: boolean
+          language: string
+          source?: string | null
+          source_url?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_id?: string
+          id?: string
+          is_original?: boolean
+          language?: string
+          source?: string | null
+          source_url?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_event_translations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_event_translations_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      timeline_events: {
+        Row: {
+          article_id: string | null
+          created_at: string | null
+          display_order: number | null
+          event_date_gregorian: string | null
+          event_date_hijri: string | null
+          event_date_hijri_year: number | null
+          event_date_precision: string | null
+          id: string
+          image_url: string | null
+          timeline_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          event_date_gregorian?: string | null
+          event_date_hijri?: string | null
+          event_date_hijri_year?: number | null
+          event_date_precision?: string | null
+          id?: string
+          image_url?: string | null
+          timeline_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          event_date_gregorian?: string | null
+          event_date_hijri?: string | null
+          event_date_hijri_year?: number | null
+          event_date_precision?: string | null
+          id?: string
+          image_url?: string | null
+          timeline_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_events_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeline_events_timeline_id_fkey"
+            columns: ["timeline_id"]
+            isOneToOne: false
+            referencedRelation: "timelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeline_translations: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_original: boolean
+          language: string | null
+          slug: string
+          status: string | null
+          timeline_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_original?: boolean
+          language?: string | null
+          slug: string
+          status?: string | null
+          timeline_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_original?: boolean
+          language?: string | null
+          slug?: string
+          status?: string | null
+          timeline_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_translations_language_fkey1"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "timeline_translations_timeline_id_fkey1"
+            columns: ["timeline_id"]
+            isOneToOne: false
+            referencedRelation: "timelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timelines: {
+        Row: {
+          author_id: string | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timelines_author_id_fkey1"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
