@@ -124,10 +124,12 @@ export type Database = {
           content: string
           content_json: Json | null
           created_at: string | null
+          embedding: string | null
           event_date_gregorian: string | null
           event_date_hijri: string | null
           event_date_hijri_year: number | null
           event_date_precision: string | null
+          fts: unknown
           id: string
           image_url: string | null
           is_featured: boolean | null
@@ -148,10 +150,12 @@ export type Database = {
           content: string
           content_json?: Json | null
           created_at?: string | null
+          embedding?: string | null
           event_date_gregorian?: string | null
           event_date_hijri?: string | null
           event_date_hijri_year?: number | null
           event_date_precision?: string | null
+          fts?: unknown
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
@@ -172,10 +176,12 @@ export type Database = {
           content?: string
           content_json?: Json | null
           created_at?: string | null
+          embedding?: string | null
           event_date_gregorian?: string | null
           event_date_hijri?: string | null
           event_date_hijri_year?: number | null
           event_date_precision?: string | null
+          fts?: unknown
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
@@ -718,6 +724,7 @@ export type Database = {
           answer: string
           answer_json: Json | null
           created_at: string | null
+          embedding: string | null
           fatwa_id: string
           id: string
           is_original: boolean | null
@@ -736,6 +743,7 @@ export type Database = {
           answer: string
           answer_json?: Json | null
           created_at?: string | null
+          embedding?: string | null
           fatwa_id: string
           id?: string
           is_original?: boolean | null
@@ -754,6 +762,7 @@ export type Database = {
           answer?: string
           answer_json?: Json | null
           created_at?: string | null
+          embedding?: string | null
           fatwa_id?: string
           id?: string
           is_original?: boolean | null
@@ -1914,6 +1923,45 @@ export type Database = {
     }
     Functions: {
       cleanup_old_view_tracking: { Args: never; Returns: undefined }
+      hybrid_search_articles: {
+        Args: {
+          match_count?: number
+          query_embedding: string
+          query_text: string
+          rrf_k?: number
+          search_locale?: string
+          vector_threshold?: number
+        }
+        Returns: {
+          category_id: number
+          id: string
+          image_url: string
+          published_at: string
+          similarity: number
+          slug: string
+          summary: string
+          title: string
+        }[]
+      }
+      hybrid_search_fatawa: {
+        Args: {
+          match_count?: number
+          query_embedding: string
+          query_text: string
+          rrf_k?: number
+          search_locale?: string
+          vector_threshold?: number
+        }
+        Returns: {
+          classification_id: number
+          id: string
+          published_at: string
+          similarity: number
+          slug: string
+          summary: string
+          title: string
+        }[]
+      }
       increment_article_views: {
         Args: { article_slug: string; viewer_ip: string }
         Returns: boolean
@@ -1928,6 +1976,24 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_author: { Args: never; Returns: boolean }
+      match_articles: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+          search_locale?: string
+        }
+        Returns: {
+          category_id: number
+          id: string
+          image_url: string
+          published_at: string
+          similarity: number
+          slug: string
+          summary: string
+          title: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

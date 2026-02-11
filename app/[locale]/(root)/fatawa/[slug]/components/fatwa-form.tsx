@@ -61,11 +61,12 @@ import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
-import { Globe, Plus, Star, Link2, FileEdit, Archive, Check, ChevronsUpDown } from 'lucide-react';
+import { Globe, Plus, Star, Link2, FileEdit, Archive, Check, ChevronsUpDown, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { revalidateFatwa, revalidateFatawa } from '@/actions/revalidate';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { ClassificationPickerDialog } from './classification-picker-dialog';
 import { getLanguageWithFlag } from '@/i18n/config';
 import { useTranslations } from 'next-intl';
 
@@ -168,6 +169,11 @@ const FatwaForm: React.FC<FatwaFormProps> = ({
   const [individualOpen, setIndividualOpen] = useState(false);
   const [status, setStatus] = useState<FatwaStatus>(
     (defaultValues.status?.toLowerCase() as FatwaStatus) ?? 'draft'
+  );
+  const [embeddingStatus, setEmbeddingStatus] = useState<'idle' | 'generating' | 'success' | 'error'>(
+    'embedding' in defaultValues && (defaultValues as unknown as { embedding: string | null }).embedding
+      ? 'success'
+      : 'idle'
   );
 
   const supabase = createClient();
@@ -349,6 +355,21 @@ const FatwaForm: React.FC<FatwaFormProps> = ({
       initialAnswerRef.current = answer;
 
       toast.success(toastMessage);
+
+      // Generate embedding for semantic search (non-blocking)
+      setEmbeddingStatus('generating');
+      supabase.functions
+        .invoke('embeddings', {
+          body: { action: 'generate_fatwa', fatwa_id: data.id },
+        })
+        .then((res) => {
+          if (res.error || !res.data?.success) {
+            setEmbeddingStatus('error');
+          } else {
+            setEmbeddingStatus('success');
+          }
+        })
+        .catch(() => setEmbeddingStatus('error'));
 
       await revalidateFatwa(data.slug);
 
@@ -544,31 +565,14 @@ const FatwaForm: React.FC<FatwaFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('classification')}</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl className="w-full">
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('selectClassification')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {classifications.map((cls) => {
-                            const translation = cls.fatwa_classification_translations?.find(
-                              (t) => t.language === 'ar'
-                            ) ?? cls.fatwa_classification_translations?.[0];
-                            return (
-                              <SelectItem
-                                key={cls.id}
-                                value={cls.id.toString()}
-                              >
-                                {translation?.name ?? cls.slug}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <ClassificationPickerDialog
+                          classifications={classifications}
+                          value={field.value}
+                          onSelect={field.onChange}
+                          placeholder={t('selectClassification')}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -628,6 +632,34 @@ const FatwaForm: React.FC<FatwaFormProps> = ({
                     ))}
                   </div>
                 </div>
+
+                {/* Embedding status */}
+                {embeddingStatus !== 'idle' && (
+                  <>
+                    <Separator />
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Indexation</span>
+                      {embeddingStatus === 'generating' && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Indexation...
+                        </Badge>
+                      )}
+                      {embeddingStatus === 'success' && (
+                        <Badge variant="default" className="gap-1">
+                          <Check className="h-3 w-3" />
+                          Indexé
+                        </Badge>
+                      )}
+                      {embeddingStatus === 'error' && (
+                        <Badge variant="destructive" className="gap-1">
+                          <X className="h-3 w-3" />
+                          Erreur
+                        </Badge>
+                      )}
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
